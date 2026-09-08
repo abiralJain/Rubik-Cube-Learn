@@ -5,7 +5,7 @@ import { Quaternion, Vector3 } from 'three';
 import type { Move } from '@/cube/notation';
 import { CubeController } from './controller';
 import { CameraFit, CubeRig, GroundShadow, Lights, SceneEnvironment } from './scene/Scene';
-import { MoveCue } from './scene/MoveCue';
+import { MoveCue, Sparkles } from './scene/MoveCue';
 import { useCubeGestures } from './hooks/useCubeGestures';
 import { HERO, type Orientation } from './orientation';
 import type { CubeStageProps } from './CubeStage';
@@ -115,13 +115,13 @@ const Cube3D = forwardRef<CubeHandle, Cube3DProps>(function Cube3D(
         dpr={[1, 1.75]}
         gl={{ antialias: true, alpha: true, stencil: false, powerPreference: 'high-performance' }}
         camera={{ fov: 32, near: 1, far: 200, position: [0, 4, 12] }}
-        onCreated={({ gl }) => setCanvasEl(gl.domElement)}
+        onCreated={({ gl }) => { ctrl.canvas = gl.domElement; setCanvasEl(gl.domElement); }}
         style={{ touchAction: 'none' }}
       >
         <SceneEnvironment />
         <Lights />
         <CameraFit fill={fill} targetY={targetY} />
-        <CubeRig ctrl={ctrl}><MoveCue ctrl={ctrl} /></CubeRig>
+        <CubeRig ctrl={ctrl}><MoveCue ctrl={ctrl} /><Sparkles ctrl={ctrl} /></CubeRig>
         <GroundShadow ctrl={ctrl} />
       </Canvas>
     </div>

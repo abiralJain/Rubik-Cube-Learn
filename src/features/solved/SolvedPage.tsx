@@ -38,7 +38,7 @@ export default function SolvedPage() {
     const t1 = setTimeout(() => {
       setPhase('bloom');
       setShell({ mode: 'holo' });
-      const c = cubeRef.current?.controller; if (c) c.bloom();
+      const c = cubeRef.current?.controller; if (c) { c.bloom(); c.celebrate('#FFF3B0'); }
       sfx.solvedChime(); if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
       if (settings.voice) setTimeout(() => speak('You solved it!'), 300);
     }, reduce ? 200 : 700);

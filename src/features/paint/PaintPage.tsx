@@ -24,6 +24,13 @@ export default function PaintPage() {
   const setShell = useShellState((s) => s.set);
   const [active, setActive] = useState<Face>('U');
   const [showSuspects, setShowSuspects] = useState(false);
+  const cubeRef = useRef<import('@/cube3d/Cube3D').CubeHandle>(null);
+  const [hintXY, setHintXY] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (settings.seenPaintHint) { setHintXY(null); return; }
+    const id = setInterval(() => { const c = cubeRef.current?.controller; const p = c?.ready ? c.project(19) : null; setHintXY(p); }, 120);
+    return () => clearInterval(id);
+  }, [settings.seenPaintHint]);
 
   const remaining = useMemo(() => Object.fromEntries(FACES.map((f) => [f, 9 - facelets.split('').filter((c) => c === f).length])) as Record<Face, number>, [facelets]);
   const filled = filledCount(facelets);
@@ -98,7 +105,8 @@ export default function PaintPage() {
   return (
     <main className="screen" aria-label="Colour in your cube">
       <div className="stage">
-        <CubeStage facelets={facelets} onStickerTap={onStickerTap} highlight={highlight} interactive />
+        <CubeStage facelets={facelets} onStickerTap={onStickerTap} highlight={highlight} interactive cubeRef={cubeRef} />
+        {hintXY && <span className="tap-hint" style={{ left: hintXY.x, top: hintXY.y }} aria-hidden />}
         <p className="paint-hint" aria-live="polite">{hint}</p>
         <p className="paint-count num"><RollingNumber value={filled} /> of 54 stickers</p>
       </div>

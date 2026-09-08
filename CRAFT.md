@@ -22,3 +22,17 @@ Motion and material values chosen for the Cube app, with the reason. Reviewed at
 
 - Sequence starts on shader-ready, not mount: settle 700 ms → bloom (iridescence 0.12→0.75, thickness range widening, clearcoat roughness tightening) with chime and haptic → copy at 1400 ms → actions 450 ms later via a CSS transition (motion's delayed entrance stalled under heavy WebGL load in testing; CSS transitions run off the main thread).
 - Iridescence relaxes to 0.25 after 2.6 s and drops to 0 the moment the child turns the cube out of solved.
+
+## Performance and landing
+
+- Landing page shows a pixel-matched WebP poster of the cube (rendered from the real scene with `?poster=1`, transparent, 540/810/1080) and boots WebGL on first interaction or after 3.8 s idle. Home's entrances are CSS keyframes so the motion library loads only with Paint, Learn and Solved. Natural rolldown chunking (React, cube, orientation) instead of manual chunks, which had forced three and motion into the entry preloads.
+- Lighthouse mobile (simulated 4G, 4× CPU) on the production preview: performance 97, accessibility 100, best practices 100; first paint 2.0 s, blocking time 0 ms, layout shift 0.
+- Glow blobs use soft radial gradients instead of a 60 px blur filter over animated children, so each frame is a transform composite rather than a re-blur.
+- Test hook `cube.fast` commits turns instantly: headless software WebGL runs at 3–4 fps, which made a 130-turn walk-through take minutes.
+
+## Kid delight
+
+- Stage complete: ripple from the top centre, one 1.2 % squash along the top axis, twelve glossy dots in the stage colour rising 0.9–1.5 units and fading over ~1.2 s (one instanced draw call), a three-note chime, and the praise line spoken.
+- Paint first run: a breathing ring follows a front sticker until the first tap; never shown again.
+- Spring rest criterion loosened to |x−target| < 0.002 and |v| < 0.02 (from 0.001 / 0.001): imperceptible at 60 fps, but the old threshold let a finished turn linger "active" for a second in low-frame-rate environments.
+- Playwright pinned to one worker: four headless browsers rendering WebGL in software starved each other and turned five-second tests into timeouts.

@@ -20,6 +20,7 @@ import * as sfx from '@/audio/sounds';
 import { smartCubeAvailable, connectGan, type MoveSource } from '@/features/smartcube/gan';
 
 const STAGE_TINT: Record<StageId, GlowTint> = { 'white-cross': 'white', 'white-corners': 'white', 'middle-edges': 'green', 'yellow-cross': 'yellow', 'yellow-corners': 'yellow', 'position-corners': 'orange', 'position-edges': 'blue' };
+const GEM_HEX: Record<StageId, string> = { 'white-cross': '#FFFDF8', 'white-corners': '#FFFDF8', 'middle-edges': '#3DBE72', 'yellow-cross': '#FFD54A', 'yellow-corners': '#FFD54A', 'position-corners': '#FF9440', 'position-edges': '#3E7BE0' };
 const GEM: Record<StageId, string> = { 'white-cross': 'var(--c-white-deep)', 'white-corners': 'var(--c-white-deep)', 'middle-edges': 'var(--c-green)', 'yellow-cross': 'var(--c-yellow)', 'yellow-corners': 'var(--c-yellow)', 'position-corners': 'var(--c-orange)', 'position-edges': 'var(--c-blue)' };
 
 export default function LearnPage() {
@@ -88,7 +89,8 @@ export default function LearnPage() {
     const nextState = stateAt(learn.start, flat.cards, next);
     if (card.type === 'move' && card.lastOfStage) {
       const line = STAGE_DONE_LINE[card.stage];
-      setPraise(line); sfx.stageChime(); if (settings.voice) setTimeout(() => speak(line), 200);
+      setPraise(line); sfx.stageChime();
+      cubeRef.current?.controller.celebrate(GEM_HEX[card.stage]); if (settings.voice) setTimeout(() => speak(line), 200);
       setTimeout(() => setPraise(null), 2200);
     }
     setWrong(0);

@@ -45,3 +45,10 @@
   .sw[aria-checked="true"] { transform: none; }
 }
 @media (min-width: 900px) { .swatches { gap: 14px; } }
+
+/* first-run: a soft ring breathing on a front sticker until the first tap */
+.tap-hint { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 0 0 6px rgba(27,24,48,.35), 0 8px 24px rgba(27,24,48,.18);
+  animation: tap-breathe 1.4s var(--ease-in-out) infinite; }
+@keyframes tap-breathe { 0%,100% { transform: scale(.9); opacity: .9; } 50% { transform: scale(1.1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .tap-hint { animation: none; } }

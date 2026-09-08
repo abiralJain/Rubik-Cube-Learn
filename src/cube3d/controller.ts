@@ -81,6 +81,10 @@ export class CubeController {
 
   floatY = 0;
   breath = 1;
+  /** Celebration particles (read by the Sparkles mesh). */
+  sparkles: Array<{ p: Vector3; v: Vector3; born: number; life: number }> = [];
+  sparkleColor = new Color('#FFD54A');
+  canvas: HTMLCanvasElement | null = null;
   bloomTarget = 0;
   bloomValue = 0;
   bloomT = -1;
@@ -262,16 +266,37 @@ export class CubeController {
 
   /* ---------- press / ripple ---------- */
   pressKick(i: number, v = -6) { this.press[i].kick(v); this.invalidate(); }
-  ripple(from: number) {
+  ripple(from: number, sound = true) {
     this.rippleTimers.forEach(clearTimeout); this.rippleTimers = [];
     const origin = STICKERS[from].position;
-    sfx.ripplePlink();
+    if (sound) sfx.ripplePlink();
     for (let i = 0; i < 54; i++) {
       const d = STICKERS[i].position.distanceTo(origin);
       const amp = -7 * Math.exp(-d / 1.6);
       if (Math.abs(amp) < 0.3) continue;
       this.rippleTimers.push(window.setTimeout(() => this.pressKick(i, amp), d * 38));
     }
+  }
+
+  /** Stage complete: a ripple from the top centre plus a handful of glossy sparkles in the stage colour. */
+  celebrate(colorHex: string, originIndex = 31) {
+    this.sparkleColor.set(colorHex);
+    this.ripple(originIndex, false);
+    const origin = STICKERS[originIndex].position;
+    this.sparkles = Array.from({ length: 12 }, (_, i) => {
+      const a = (i / 12) * Math.PI * 2 + Math.random() * 0.4;
+      const r = 0.6 + Math.random() * 0.9;
+      return { p: origin.clone().add(new Vector3(Math.cos(a) * r, 0, Math.sin(a) * r).applyQuaternion(this.tmpQ.setFromUnitVectors(new Vector3(0, 1, 0), STICKERS[originIndex].normal))), v: STICKERS[originIndex].normal.clone().multiplyScalar(0.9 + Math.random() * 0.6).addScaledVector(new Vector3(Math.cos(a), 0, Math.sin(a)), 0.25), born: this.t, life: 1.1 + Math.random() * 0.3 };
+    });
+    this.squashAxis.copy(STICKERS[originIndex].normal); this.squash.snap(0); this.squash.kick(1.2);
+    this.invalidate();
+  }
+  /** Screen position (CSS px, relative to the canvas) of sticker i right now. */
+  project(i: number): { x: number; y: number } | null {
+    if (!this.camera || !this.canvas) return null;
+    const r = this.canvas.getBoundingClientRect();
+    const p = STICKERS[i].position.clone().applyQuaternion(this.tmpQ.copy(this.qDrift).multiply(this.qOrientation)); p.y += this.floatY; p.project(this.camera);
+    return { x: ((p.x + 1) / 2) * r.width, y: ((1 - p.y) / 2) * r.height };
   }
 
   /** Solved moment: iridescence sweeps to full, then relaxes to a memento level. */
@@ -390,6 +415,7 @@ export class CubeController {
 
     if (this.squash.moving) { this.squash.step(dt); moving = true; }
     if (this.applyBloom(dt)) moving = true;
+    if (this.sparkles.length) { this.sparkles = this.sparkles.filter((sp) => this.t - sp.born < sp.life); for (const sp of this.sparkles) { sp.p.addScaledVector(sp.v, dt); sp.v.multiplyScalar(Math.exp(-1.6 * dt)); } moving = true; }
     if (this.cuePulse.moving) { this.cuePulse.step(dt); moving = true; }
     const cueTarget = this.cue && !this.active ? 1 : 0;
     if (Math.abs(this.cueOpacity - cueTarget) > 0.002) { this.cueOpacity = damp(this.cueOpacity, cueTarget, 14, dt); moving = true; } else this.cueOpacity = cueTarget;

@@ -51,7 +51,7 @@ test('dragging a sticker sideways turns only its layer and commits a move', asyn
   await page.mouse.move(s.x, s.y); await page.mouse.down();
   for (let i = 1; i <= 12; i++) { await page.mouse.move(s.x + i * 12, s.y); await page.waitForTimeout(16); }
   await page.mouse.up();
-  await page.waitForTimeout(1200);
+  await page.waitForFunction(() => !(window as unknown as { __cube: Dbg }).__cube.active, null, { timeout: 15_000 });
   const after = await facelets(page);
   expect(after).not.toBe(before);
   // only the U layer may change: D face (27..35) untouched, bottom two rows of the side faces untouched

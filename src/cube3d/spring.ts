@@ -18,13 +18,13 @@ export class Spring {
       this.x += this.v * h;
       rem -= h;
     }
-    const done = Math.abs(this.x - this.target) < 1e-3 && Math.abs(this.v) < 1e-3;
+    const done = Math.abs(this.x - this.target) < 2e-3 && Math.abs(this.v) < 0.02;
     if (done) { this.x = this.target; this.v = 0; }
     return !done;
   }
   kick(v: number) { this.v += v; }
   snap(x: number) { this.x = x; this.target = x; this.v = 0; }
-  get moving() { return Math.abs(this.x - this.target) >= 1e-3 || Math.abs(this.v) >= 1e-3; }
+  get moving() { return Math.abs(this.x - this.target) >= 2e-3 || Math.abs(this.v) >= 0.02; }
 }
 
 export const damp = (cur: number, tgt: number, lambda: number, dt: number) => cur + (tgt - cur) * (1 - Math.exp(-lambda * dt));

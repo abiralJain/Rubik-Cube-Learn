@@ -35,10 +35,13 @@ test('pressing Next through a random scramble ends on the solved screen with a s
   expect(f).toBe(SOLVED);
 });
 
+const idle = (page: Page) => page.waitForFunction(() => { const c = (window as unknown as { __cube: { active: unknown; queue: unknown[] } }).__cube; return !c.active && c.queue.length === 0; }, null, { timeout: 15_000 });
+
 test('resume: reloading mid-solve comes back to the same move', async ({ page }) => {
-  await seed(page, Cube.random().asString());
+  await seed(page, Cube.random().asString(), true);
   const primary = page.locator('.learn-actions .btn-primary');
-  for (let i = 0; i < 6; i++) { await primary.click(); await page.waitForTimeout(500); }
+  for (let i = 0; i < 6; i++) { await primary.click(); await idle(page); await page.waitForTimeout(150); }
+  await page.waitForTimeout(400);
   const meta = await page.locator('.learn-head .meta').innerText();
   const before = await display(page);
   await page.reload();

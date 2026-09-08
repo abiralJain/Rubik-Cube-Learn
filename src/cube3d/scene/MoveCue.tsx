@@ -89,3 +89,25 @@ export function MoveCue({ ctrl }: { ctrl: CubeController }) {
   });
   return <group ref={holder} />;
 }
+
+import { InstancedMesh, Matrix4, MeshBasicMaterial as MBM, SphereGeometry } from 'three';
+/** Twelve glossy dots that rise and fade after a stage completes. One draw call. */
+export function Sparkles({ ctrl }: { ctrl: CubeController }) {
+  const ref = useRef<InstancedMesh>(null);
+  const geo = useMemo(() => new SphereGeometry(0.075, 10, 8), []);
+  const mat = useMemo(() => new MBM({ color: '#ffffff', transparent: true, opacity: 0.95 }), []);
+  const m4 = useMemo(() => new Matrix4(), []);
+  useFrame(() => {
+    const im = ref.current; if (!im) return;
+    mat.color.copy(ctrl.sparkleColor);
+    let n = 0;
+    for (const sp of ctrl.sparkles) {
+      const age = (ctrl.t - sp.born) / sp.life;
+      const s = 0.5 + 0.9 * Math.sin(Math.PI * Math.min(1, age)); // grows then shrinks
+      m4.makeScale(s, s, s).setPosition(sp.p);
+      im.setMatrixAt(n++, m4);
+    }
+    im.count = n; im.instanceMatrix.needsUpdate = true; im.visible = n > 0;
+  });
+  return <instancedMesh ref={ref} args={[geo, mat, 12]} frustumCulled={false} />;
+}
