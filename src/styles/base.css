@@ -91,6 +91,10 @@ a { color: inherit; text-decoration: none; }
   .dock { --dock-max: 560px; font-size: 1.15em; }
 }
 
+/* Poster shown before the 3D cube boots (must be global: the cube's own CSS loads lazily) */
+.cube-poster-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.cube-poster { position: absolute; inset: 0; }
+
 /* Glass */
 .glass {
   background: var(--glass);

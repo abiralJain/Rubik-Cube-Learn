@@ -25,7 +25,7 @@ interface Session {
   resetPaint: () => void;
   startLearn: (start: string) => void;
   setLearnCard: (card: number, facelets: string, elapsedMs: number) => void;
-  finishLearn: (ms: number, moves: number) => void;
+  finishLearn: (ms: number, moves: number, facelets: string) => void;
   clearSession: () => void;
   setSetting: <K extends keyof Session['settings']>(k: K, v: Session['settings'][K]) => void;
 }
@@ -71,7 +71,7 @@ export const useSession = create<Session>()(
         const l = get().learn;
         if (l) set({ learn: { ...l, card, elapsedMs }, facelets });
       },
-      finishLearn: (ms, moves) => set({ solved: { ms, moves, at: Date.now() }, learn: null }),
+      finishLearn: (ms, moves, facelets) => set({ solved: { ms, moves, at: Date.now() }, learn: null, facelets }),
       clearSession: () => set({ facelets: EMPTY_FACELETS, paintHistory: [], learn: null, solved: null }),
       setSetting: (k, v) => set({ settings: { ...get().settings, [k]: v } }),
     }),

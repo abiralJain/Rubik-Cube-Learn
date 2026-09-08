@@ -14,6 +14,8 @@ export const useShellState = create<{ tint: Tint | null; mode?: 'holo' | 'off'; 
 
 export function Shell() {
   const { tint, mode } = useShellState();
+  const poster = typeof location !== 'undefined' && new URLSearchParams(location.search).get('poster') === '1';
+  if (poster) return <Outlet />;
   const settings = useSession((s) => s.settings);
   const setSetting = useSession((s) => s.setSetting);
   return (

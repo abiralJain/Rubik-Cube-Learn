@@ -46,3 +46,8 @@
 }
 @media (min-width: 900px) { .home { grid-template-columns: 60fr 40fr; } .home h1 { font-size: 48px; } }
 @media (min-width: 1600px) { .home { grid-template-columns: 65fr 35fr; } .home h1 { font-size: 60px; } .home-dock { max-width: 600px; } .entry { min-height: 100px; } }
+
+/* staged entrance, once, off the main thread */
+.enter { animation: enter 320ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 50ms); }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .enter { animation: none; } }

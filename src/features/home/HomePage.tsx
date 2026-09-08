@@ -1,6 +1,5 @@
 import './Home.css';
 import { useNavigate } from 'react-router';
-import { motion, useReducedMotion } from 'motion/react';
 import { Icon, type IconName } from '@/ui/Icon';
 import { CubeStage } from '@/cube3d/CubeStage';
 import { useSession, filledCount, EMPTY_FACELETS } from '@/store/session';
@@ -16,7 +15,7 @@ const ENTRIES: Array<{ to: string; icon: IconName; tone: string; title: string; 
 
 export default function HomePage() {
   const nav = useNavigate();
-  const reduce = useReducedMotion();
+  const poster = typeof location !== 'undefined' && new URLSearchParams(location.search).get('poster') === '1';
   const { facelets, learn, clearSession } = useSession();
   const setShell = useShellState((s) => s.set);
   useEffect(() => { setShell({ tint: null, mode: undefined }); }, [setShell]);
@@ -25,10 +24,12 @@ export default function HomePage() {
   const inProgress = learn ? 'learn' : painted > 6 ? 'paint' : null;
   const continueText = learn ? 'Teach me · keep solving' : `Colour it in · ${painted} of 54`;
 
+  if (poster) { document.documentElement.style.background = 'transparent'; document.body.style.background = 'transparent'; }
+  if (poster) return <main style={{ position: 'fixed', inset: 0, background: 'transparent' }}><CubeStage facelets={HOME_PATTERN} interactive={false} rippleOnTap={false} /></main>;
   return (
     <main className="home">
       <div className="home-stage">
-        <CubeStage facelets={inProgress ? facelets : HOME_PATTERN} layerTurns interactive />
+        <CubeStage facelets={inProgress ? facelets : HOME_PATTERN} layerTurns interactive defer={!inProgress} poster={inProgress ? undefined : '/poster/home'} />
       </div>
       <div className="home-dock">
         <div>
@@ -37,21 +38,18 @@ export default function HomePage() {
         </div>
         <div className="entries">
           {inProgress && (
-            <motion.button className="entry entry-continue" onClick={() => nav(inProgress === 'learn' ? '/learn' : '/paint')}
-              initial={reduce ? false : { opacity: 0, transform: 'translateY(8px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} transition={{ duration: 0.28, ease: [0.23, 1, 0.32, 1] }}>
+            <button className="entry entry-continue enter" style={{ '--i': 0 } as CSSProperties} onClick={() => nav(inProgress === 'learn' ? '/learn' : '/paint')}>
               <span className="badge"><Icon name="arrow-right" /></span>
               <span><h2>Keep going</h2><p>{continueText}</p></span>
               <Icon className="chev" name="arrow-right" />
-            </motion.button>
+            </button>
           )}
           {ENTRIES.map((e, i) => (
-            <motion.button key={e.to} className="entry" style={{ '--tone': e.tone } as CSSProperties} onClick={() => nav(e.to)}
-              initial={reduce ? false : { opacity: 0, transform: 'translateY(8px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }}
-              transition={{ duration: 0.28, delay: 0.05 * (i + (inProgress ? 1 : 0)), ease: [0.23, 1, 0.32, 1] }}>
+            <button key={e.to} className="entry enter" style={{ '--tone': e.tone, '--i': i + (inProgress ? 1 : 0) } as CSSProperties} onClick={() => nav(e.to)}>
               <span className="badge"><Icon name={e.icon} /></span>
               <span><h2>{e.title}</h2><p>{e.text}</p></span>
               <Icon className="chev" name="arrow-right" />
-            </motion.button>
+            </button>
           ))}
         </div>
         {inProgress && facelets !== EMPTY_FACELETS && (

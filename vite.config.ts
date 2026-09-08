@@ -9,13 +9,7 @@ export default defineConfig({
   optimizeDeps: { include: ['cubejs'] },
   build: {
     target: 'es2022',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          three: ['three', '@react-three/fiber'],
-        },
-      },
-    },
+    rollupOptions: {},
   },
   test: {
     environment: 'jsdom',

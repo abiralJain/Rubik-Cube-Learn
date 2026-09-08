@@ -94,7 +94,7 @@ export default function LearnPage() {
     setWrong(0);
     if (flat.cards[next]?.type === 'done') {
       const ms = elapsed;
-      finishLearn(ms, flat.totalMoves);
+      finishLearn(ms, flat.totalMoves, nextState);
       setTimeout(() => nav('/solved'), fromUser ? 500 : 700);
       return;
     }
