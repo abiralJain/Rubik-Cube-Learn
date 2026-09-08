@@ -93,6 +93,20 @@ const Y_FULL: Int8Array = (() => {
   return p;
 })();
 
+/** Index map for k whole-cube y rotations: out[i] = index in the original string that sits at position i of the rotated view. */
+export function yIndexMap(times: number): number[] {
+  let arr = Array.from({ length: 54 }, (_, i) => i);
+  for (let t = 0; t < ((times % 4) + 4) % 4; t++) arr = Array.from({ length: 54 }, (_, i) => arr[Y_FULL[i]]);
+  return arr;
+}
+/** Index map for z2: out[i] = original index sitting at position i after the rotation. */
+export const Z2_INDEX: number[] = (() => {
+  const out = new Array<number>(54);
+  const swap: Array<[Face, Face]> = [['U', 'D'], ['D', 'U'], ['R', 'L'], ['L', 'R'], ['F', 'F'], ['B', 'B']];
+  for (const [from, to] of swap) for (let k = 0; k < 9; k++) out[idx(to, 8 - k)] = idx(from, k);
+  return out;
+})();
+
 /** z2: rotate the whole cube 180° about the F–B axis. U↔D, R↔L with local index reversed; F and B reversed in place. */
 export function rotateZ2(f: Facelets): Facelets {
   const out = new Array<string>(54);

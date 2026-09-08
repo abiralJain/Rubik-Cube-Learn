@@ -7,6 +7,9 @@ import { layerFor } from '../moves';
 import { unlockAudio } from '@/audio/sounds';
 
 type Sample = { x: number; y: number; t: number };
+const dbg: string[] = [];
+if (import.meta.env.DEV) (window as unknown as { __gest: string[] }).__gest = dbg;
+const log = (m: string) => { if (import.meta.env.DEV) { dbg.push(m); if (dbg.length > 60) dbg.shift(); } };
 
 /**
  * One recognizer on the canvas: tap (press + onStickerTap), orbit (drag on ground or when layer turns are off),
@@ -51,6 +54,7 @@ export function useCubeGestures(canvas: HTMLCanvasElement | null, ctrl: CubeCont
     const rigQ = () => ctrl.qDrift.clone().multiply(ctrl.qOrientation);
 
     const down = (e: PointerEvent) => {
+      log(`down id=${e.pointerId} cur=${pointerId} active=${!!ctrl.active}`);
       if (!ctrl.interactive || pointerId !== null) return;
       unlockAudio();
       pointerId = e.pointerId;
@@ -61,6 +65,7 @@ export function useCubeGestures(canvas: HTMLCanvasElement | null, ctrl: CubeCont
       ctrl.omega.set(0, 0, 0);
       ctrl.cancelOrientation();
       hitIndex = pick(e);
+      log(`hit=${hitIndex}`);
       pressed = -1;
       if (hitIndex >= 0 && !ctrl.active) { pressed = hitIndex; ctrl.pressKick(hitIndex, -5); }
     };
@@ -120,6 +125,7 @@ export function useCubeGestures(canvas: HTMLCanvasElement | null, ctrl: CubeCont
     };
 
     const up = (e: PointerEvent) => {
+      log(`up id=${e.pointerId} cur=${pointerId} mode=${mode} hit=${hitIndex}`);
       if (e.pointerId !== pointerId || !start) return;
       const dt = performance.now() - start.t;
       const dist = Math.hypot(e.clientX - start.x, e.clientY - start.y);
