@@ -30,7 +30,7 @@ export function SceneEnvironment() {
   return null;
 }
 
-export function CameraFit({ fill = FILL, targetY = 0 }: { fill?: number; targetY?: number }) {
+export function CameraFit({ fill = FILL, targetY = -0.3 }: { fill?: number; targetY?: number }) {
   const { camera, size } = useThree();
   useLayoutEffect(() => {
     const cam = camera as PerspectiveCamera;
@@ -66,7 +66,7 @@ export function GroundShadow({ ctrl }: { ctrl: CubeController }) {
 }
 
 /** 26 bodies + 54 stickers registered into the controller; the controller's update() drives every frame. */
-export function CubeRig({ ctrl }: { ctrl: CubeController }) {
+export function CubeRig({ ctrl, children }: { ctrl: CubeController; children?: React.ReactNode }) {
   const group = useRef<import('three').Group>(null);
   const { camera, invalidate, gl } = useThree();
   const materials = useMemo(() => STICKERS.map((p) => makeStickerMaterial(COLORS_FROM(ctrl.displayFacelets[p.index]))), [ctrl]);
@@ -122,6 +122,7 @@ export function CubeRig({ ctrl }: { ctrl: CubeController }) {
           ref={(m) => { if (m) { m.userData.index = p.index; ctrl.stickers[p.index] = m; } }}
         />
       ))}
+      {children}
     </group>
   );
 }

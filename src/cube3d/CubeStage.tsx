@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type RefObject } from 'react';
+import type { Cube3DProps, CubeHandle } from './Cube3D';
 
 const Cube3D = lazy(() => import('./Cube3D'));
 
@@ -11,10 +12,10 @@ export type CubeStageProps = {
 };
 
 /** Lazy wrapper so three.js never blocks first paint. */
-export function CubeStage(props: CubeStageProps) {
+export function CubeStage({ cubeRef, ...props }: Cube3DProps & { cubeRef?: RefObject<CubeHandle | null> }) {
   return (
     <Suspense fallback={<div className="cube-poster" aria-hidden />}>
-      <Cube3D {...props} />
+      <Cube3D ref={cubeRef} {...props} />
     </Suspense>
   );
 }

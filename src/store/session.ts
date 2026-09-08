@@ -15,7 +15,7 @@ interface Session {
   facelets: string;
   paintHistory: PaintEdit[];
   lastInput: 'camera' | 'paint' | null;
-  learn: { stepIndex: number; moveIndex: number; startedAt: number | null; planKey: string | null } | null;
+  learn: { start: string; card: number; startedAt: number; elapsedMs: number } | null;
   solved: { ms: number; moves: number; at: number } | null;
   settings: { sound: boolean; voice: boolean; seenPaintHint: boolean; seenLearnHint: boolean };
 
@@ -23,8 +23,8 @@ interface Session {
   paint: (index: number, to: Facelet, auto?: boolean) => void;
   undoPaint: () => void;
   resetPaint: () => void;
-  startLearn: (planKey: string) => void;
-  setLearnPos: (stepIndex: number, moveIndex: number) => void;
+  startLearn: (start: string) => void;
+  setLearnCard: (card: number, facelets: string, elapsedMs: number) => void;
   finishLearn: (ms: number, moves: number) => void;
   clearSession: () => void;
   setSetting: <K extends keyof Session['settings']>(k: K, v: Session['settings'][K]) => void;
@@ -66,10 +66,10 @@ export const useSession = create<Session>()(
         set({ facelets: f, paintHistory: hist });
       },
       resetPaint: () => set({ facelets: EMPTY_FACELETS, paintHistory: [], learn: null }),
-      startLearn: (planKey) => set({ learn: { stepIndex: 0, moveIndex: 0, startedAt: Date.now(), planKey } }),
-      setLearnPos: (stepIndex, moveIndex) => {
+      startLearn: (start) => set({ learn: { start, card: 0, startedAt: Date.now(), elapsedMs: 0 } }),
+      setLearnCard: (card, facelets, elapsedMs) => {
         const l = get().learn;
-        if (l) set({ learn: { ...l, stepIndex, moveIndex } });
+        if (l) set({ learn: { ...l, card, elapsedMs }, facelets });
       },
       finishLearn: (ms, moves) => set({ solved: { ms, moves, at: Date.now() }, learn: null }),
       clearSession: () => set({ facelets: EMPTY_FACELETS, paintHistory: [], learn: null, solved: null }),

@@ -17,7 +17,6 @@ const stickerXY = (page: Page, i: number) => page.evaluate((i) => {
   return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
 }, i);
 const faceFront = (page: Page, top: string, front: string) => page.evaluate(([t, f]) => (window as unknown as { __cube: any }).__cube.setOrientation({ top: t, front: f, yaw: 0, pitch: 0 }, false), [top, front]); // eslint-disable-line @typescript-eslint/no-explicit-any
-const countText = (page: Page) => page.locator('.paint-count').innerText();
 
 test('a random scramble can be painted face by face; the 54th fills itself; undo steps back through it', async ({ page }) => {
   await page.goto('/paint');

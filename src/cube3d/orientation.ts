@@ -20,3 +20,10 @@ export function resolveOrientation(o: Orientation): Quaternion {
   if (o instanceof Quaternion) return o.clone();
   return quaternionForFaces(o.top, o.front, o.yaw ?? -0.5, o.pitch ?? 0.1);
 }
+
+/** Which side of the screen a face's normal points to for a given hold (before yaw): negative = viewer's left, positive = right, 0 = neither. */
+export function faceSide(top: Face, front: Face, face: Face): number {
+  const q = quaternionForFaces(top, front, 0, 0);
+  const n = new Vector3(...FACES[face].n).applyQuaternion(q);
+  return Math.abs(n.x) > 0.5 ? Math.sign(n.x) : 0;
+}

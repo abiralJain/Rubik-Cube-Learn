@@ -1,4 +1,4 @@
-import { CanvasTexture, Color, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PMREMGenerator, type Texture, type WebGLRenderer } from 'three';
+import { CanvasTexture, Color, SRGBColorSpace, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PMREMGenerator, type Texture, type WebGLRenderer } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { BODY_COLOR, BODY_RADIUS, BODY_SEGMENTS, CUBELET, STICKER_DEPTH, STICKER_RADIUS, STICKER_SEGMENTS, STICKER_SIZE, COLORS } from './constants';
@@ -26,8 +26,8 @@ export function makeStickerMaterial(hex: string) {
 
 const hsl = { h: 0, s: 0, l: 0 };
 export function dimColor(base: Color, out: Color) {
-  base.getHSL(hsl);
-  return out.setHSL(hsl.h, hsl.s * 0.25, hsl.l * 0.6);
+  base.getHSL(hsl, SRGBColorSpace);
+  return out.setHSL(hsl.h, hsl.s * 0.55, Math.min(0.42, hsl.l * 0.5), SRGBColorSpace);
 }
 
 let shadowTex: CanvasTexture | null = null;

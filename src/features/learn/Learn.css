@@ -1,0 +1,37 @@
+.learn-card { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
+.gems { display: flex; gap: 6px; align-items: center; }
+.gem {
+  flex: 1; height: 10px; border-radius: 6px; position: relative;
+  background: rgba(27,24,48,.08); box-shadow: inset 0 1px 1px rgba(27,24,48,.06);
+  transition: background-color 300ms var(--ease-out), box-shadow 300ms var(--ease-out), transform 300ms var(--spring);
+}
+.gem[data-done] { background: var(--gem); box-shadow: var(--gloss); }
+.gem[data-active] { background: var(--gem); box-shadow: var(--gloss), 0 0 0 3px color-mix(in srgb, var(--gem) 35%, transparent); animation: gem-breathe 2.4s ease-in-out infinite; }
+@keyframes gem-breathe { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.25); } }
+.learn-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.learn-head h2 { font-size: 21px; }
+.learn-head .meta { color: var(--ink-2); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.learn-body { min-height: 110px; display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; }
+.glyph {
+  font-family: var(--font-display); font-weight: 700; font-size: 64px; line-height: 1; letter-spacing: -0.02em;
+  min-width: 72px; text-align: center; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.glyph[data-hold] { font-size: 44px; }
+.glyph small { display: block; font-size: 13px; font-weight: 600; color: var(--ink-3); letter-spacing: 0; margin-top: 4px; }
+.sentence { font-family: var(--font-text); font-weight: 600; font-size: 19px; line-height: 1.4; color: var(--ink); }
+.sentence .why { display: block; margin-top: 6px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
+.tip { display: flex; gap: 8px; align-items: flex-start; color: var(--ink-2); font-size: 15px; font-weight: 600; }
+.tip svg { width: 18px; height: 18px; flex: 0 0 auto; margin-top: 2px; color: var(--c-orange-deep); }
+.learn-actions { display: flex; gap: 10px; }
+.learn-actions .btn-primary { flex: 1; }
+.learn-secondary { display: flex; gap: 8px; justify-content: center; }
+.learn-secondary .btn { min-height: 40px; padding: 0 14px; font-size: 15px; }
+.praise { position: absolute; left: 0; right: 0; top: 10px; text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 22px; color: var(--ink); pointer-events: none; }
+.learn-swap { display: grid; }
+.learn-swap > * { grid-area: 1 / 1; }
+@media (max-width: 599px) { .glyph { font-size: 52px; min-width: 60px; } .sentence { font-size: 17px; } .learn-card { padding: 16px 16px 16px; } }
+@media (prefers-reduced-motion: reduce) { .gem[data-active] { animation: none; } }
+
+.learn-secondary .short { display: none; }
+@media (max-width: 599px) { .learn-secondary .long { display: none; } .learn-secondary .short { display: inline; } .learn-card { gap: 12px; } }

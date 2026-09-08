@@ -23,7 +23,7 @@ export default function HomePage() {
 
   const painted = filledCount(facelets);
   const inProgress = learn ? 'learn' : painted > 6 ? 'paint' : null;
-  const continueText = learn ? `Teach me · move ${learn.moveIndex + 1}` : `Colour it in · ${painted} of 54`;
+  const continueText = learn ? 'Teach me · keep solving' : `Colour it in · ${painted} of 54`;
 
   return (
     <main className="home">

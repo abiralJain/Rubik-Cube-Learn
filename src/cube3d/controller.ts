@@ -37,6 +37,14 @@ export class CubeController {
 
   displayFacelets = '';
   ready = false;
+  /** Learn mode: only this move may commit from a drag; anything else rubber-bands home. */
+  gate: ((m: Move) => boolean) | null = null;
+  onRejected: (() => void) | null = null;
+  cue: Move | null = null;
+  /** Which face is up in the user's hands (cube-local). The hidden-face arrow is drawn along its edge. */
+  cueUp: BaseMove = 'U';
+  cueOpacity = 0;
+  cuePulse = new Spring(0, 260, 16);
   onReady: (() => void) | null = null;
   reduced = false;
   paused = false;
@@ -71,6 +79,9 @@ export class CubeController {
 
   floatY = 0;
   breath = 1;
+  bloomTarget = 0;
+  bloomValue = 0;
+  bloomT = -1;
   t = 0;
   cb: ControllerCallbacks = {};
 
@@ -197,6 +208,11 @@ export class CubeController {
     const here = Math.round(a.spring.x / HALF_PI) * HALF_PI;
     target = Math.max(here - HALF_PI, Math.min(here + HALF_PI, target));
     target = Math.max(-Math.PI, Math.min(Math.PI, target));
+    const q = Math.round(target / HALF_PI);
+    if (q !== 0 && this.gate) {
+      const candidate = makeMove(a.base, ((-q % 4) + 4) % 4);
+      if (!candidate || !this.gate(candidate)) { target = 0; this.cuePulse.snap(0); this.cuePulse.kick(9); this.onRejected?.(); }
+    }
     a.targetAngle = target;
     a.spring.target = target;
     a.spring.v = this.reduced ? 0 : angularVelocity;
@@ -252,6 +268,27 @@ export class CubeController {
       const amp = -7 * Math.exp(-d / 1.6);
       if (Math.abs(amp) < 0.3) continue;
       this.rippleTimers.push(window.setTimeout(() => this.pressKick(i, amp), d * 38));
+    }
+  }
+
+  /** Solved moment: iridescence sweeps to full, then relaxes to a memento level. */
+  bloom() { this.bloomT = this.t; this.bloomTarget = 0.75; this.invalidate(); }
+  setBloom(v: number) { this.bloomTarget = v; this.bloomT = -1; this.invalidate(); }
+  private applyBloom(dt: number): boolean {
+    if (this.bloomT >= 0 && this.t - this.bloomT > 2.6) { this.bloomTarget = 0.25; this.bloomT = -1; }
+    if (Math.abs(this.bloomValue - this.bloomTarget) < 0.002) { if (this.bloomValue !== this.bloomTarget) { this.bloomValue = this.bloomTarget; this.writeBloom(); } return false; }
+    this.bloomValue = damp(this.bloomValue, this.bloomTarget, this.bloomTarget > this.bloomValue ? 4.5 : 2.2, dt);
+    this.writeBloom();
+    return true;
+  }
+  private writeBloom() {
+    const b = this.bloomValue;
+    for (let i = 0; i < 54; i++) {
+      const m = this.stickers[i]?.material as MeshPhysicalMaterial | undefined; if (!m) continue;
+      if (this.displayFacelets[i] === '.') continue;
+      m.iridescence = 0.12 + 0.88 * b;
+      m.iridescenceThicknessRange = [160 + 120 * b, 520 + 300 * b];
+      m.clearcoatRoughness = 0.12 - 0.06 * b;
     }
   }
 
@@ -329,7 +366,16 @@ export class CubeController {
         moving = true;
       } else if (m.scale.x !== 1) { m.scale.set(1, 1, 1); if (!this.active?.stickerIds.includes(i)) m.position.copy(p.position); }
       const mat = m.material as MeshPhysicalMaterial;
-      const target = this.highlight && !this.highlight.has(i) ? this.dimmed[i] : this.baseColor[i];
+      const isDim = !!this.highlight && !this.highlight.has(i);
+      const target = isDim ? this.dimmed[i] : this.baseColor[i];
+      const envT = this.displayFacelets[i] === '.' ? 0.5 : isDim ? 0.4 : 1.1 + 0.5 * this.bloomValue;
+      // highlighted stickers breathe outward so the eye finds them even on a busy cube
+      if (this.highlight && this.highlight.has(i) && !sp.moving && !this.active?.stickerIds.includes(i)) {
+        const lift = 0.06 * (0.5 + 0.5 * Math.sin(this.t * 4));
+        m.position.copy(p.position).addScaledVector(p.normal, lift);
+        moving = true;
+      } else if (!this.highlight && !sp.moving && !this.active && m.position.distanceToSquared(p.position) > 1e-8) m.position.copy(p.position);
+      if (Math.abs(mat.envMapIntensity - envT) > 0.005) { mat.envMapIntensity = damp(mat.envMapIntensity, envT, HIGHLIGHT_DAMP, dt); moving = true; }
       if (!mat.color.equals(target)) {
         mat.color.r = damp(mat.color.r, target.r, HIGHLIGHT_DAMP, dt);
         mat.color.g = damp(mat.color.g, target.g, HIGHLIGHT_DAMP, dt);
@@ -340,6 +386,10 @@ export class CubeController {
     }
 
     if (this.squash.moving) { this.squash.step(dt); moving = true; }
+    if (this.applyBloom(dt)) moving = true;
+    if (this.cuePulse.moving) { this.cuePulse.step(dt); moving = true; }
+    const cueTarget = this.cue && !this.active ? 1 : 0;
+    if (Math.abs(this.cueOpacity - cueTarget) > 0.002) { this.cueOpacity = damp(this.cueOpacity, cueTarget, 14, dt); moving = true; } else this.cueOpacity = cueTarget;
 
     if (moving) this.invalidate();
     return moving;
