@@ -37,6 +37,8 @@ export class CubeController {
 
   displayFacelets = '';
   ready = false;
+  /** Test hook: commit turns immediately (set localStorage 'cube.fast' = '1'). */
+  fast = typeof localStorage !== 'undefined' && localStorage.getItem('cube.fast') === '1';
   /** Learn mode: only this move may commit from a drag; anything else rubber-bands home. */
   gate: ((m: Move) => boolean) | null = null;
   onRejected: (() => void) | null = null;
@@ -177,6 +179,7 @@ export class CubeController {
     spring.target = def.angle;
     this.active = { base: def.base, nf: FACE_NORMAL[def.base], slotIds: def.slotIds, stickerIds: def.stickerIds, spring, started: this.t, mode: 'play', targetAngle: def.angle, resolve: q.resolve, replay: q.replay, ghost: q.ghost, speed: q.speed };
     this.ghostOpacity = q.ghost ? 0.55 : 1;
+    if (this.fast) spring.snap(def.angle);
   }
 
   /* ---------- layer drag (direct manipulation) ---------- */

@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+await page.goto('http://localhost:5173/');
+await page.evaluate(() => localStorage.setItem('cube.session.v1', JSON.stringify({ state: { facelets: 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB', paintHistory: [], lastInput: 'paint', learn: null, solved: { ms: 252000, moves: 84, at: Date.now() }, settings: { sound: false, voice: false, seenPaintHint: true, seenLearnHint: false } }, version: 1 })));
+await page.goto('http://localhost:5173/solved');
+await page.waitForFunction(() => window.__cube?.ready === true, null, { timeout: 30000 });
+await page.waitForTimeout(5000);
+console.log(await page.evaluate(() => { const r = document.querySelector('.reveal'); if (!r) return 'no reveal'; const b = r.getBoundingClientRect(); const cs = getComputedStyle(r); return { dataIn: r.hasAttribute('data-in'), opacity: cs.opacity, transform: cs.transform, top: b.top, h: b.height, transition: cs.transitionProperty, delay: cs.transitionDelay, html: r.outerHTML.slice(0, 120) }; }));
+await browser.close();

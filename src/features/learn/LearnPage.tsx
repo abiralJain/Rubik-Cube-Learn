@@ -17,6 +17,7 @@ import { usePlan, stateAt, movesBefore, type Card } from './useLearnSession';
 import { faceSide } from '@/cube3d/orientation';
 import { speak, hush } from './speech';
 import * as sfx from '@/audio/sounds';
+import { smartCubeAvailable, connectGan, type MoveSource } from '@/features/smartcube/gan';
 
 const STAGE_TINT: Record<StageId, GlowTint> = { 'white-cross': 'white', 'white-corners': 'white', 'middle-edges': 'green', 'yellow-cross': 'yellow', 'yellow-corners': 'yellow', 'position-corners': 'orange', 'position-edges': 'blue' };
 const GEM: Record<StageId, string> = { 'white-cross': 'var(--c-white-deep)', 'white-corners': 'var(--c-white-deep)', 'middle-edges': 'var(--c-green)', 'yellow-cross': 'var(--c-yellow)', 'yellow-corners': 'var(--c-yellow)', 'position-corners': 'var(--c-orange)', 'position-edges': 'var(--c-blue)' };
@@ -45,6 +46,8 @@ export default function LearnPage() {
   const moveNo = flat ? movesBefore(flat.cards, cardIndex) : 0;
   const stage: StageId = card && card.type !== 'done' ? card.stage : 'position-edges';
   const [praise, setPraise] = useState<string | null>(null);
+  const [smart, setSmart] = useState<MoveSource | null>(null);
+  const [deviation, setDeviation] = useState<Move[]>([]);
   const [wrong, setWrong] = useState(0);
   const busy = useRef(false);
 
@@ -133,6 +136,23 @@ export default function LearnPage() {
   const onRejected = useCallback(() => { setWrong((w) => w + 1); }, []);
   useEffect(() => { if (wrong === 3) onAgain(); }, [wrong, onAgain]);
 
+  // smart cube: a real turn arrives as notation in the standard frame
+  useEffect(() => {
+    if (!smart) return;
+    return smart.onMove(async (m) => {
+      if (card?.type !== 'move') return;
+      if (deviation.length) {
+        const recover = invert(deviation[deviation.length - 1]);
+        await cubeRef.current?.play(m);
+        setDeviation((d) => (m === recover ? d.slice(0, -1) : [...d, m]));
+        return;
+      }
+      if (m === card.move) { busy.current = true; await cubeRef.current?.play(m); busy.current = false; advance(true); }
+      else { await cubeRef.current?.play(m); setDeviation([m]); sfx.bloop(); }
+    });
+  }, [smart, card, deviation, advance]);
+  useEffect(() => () => smart?.disconnect(), [smart]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === ' ' || e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); onNext(); }
@@ -198,7 +218,12 @@ export default function LearnPage() {
             <Button variant="ghost" onClick={onPrev} disabled={cardIndex === 0}><Icon name="undo" /> <span className="long">Undo my last turn</span><span className="short">Undo turn</span></Button>
           </div>
         </section>
-        <p style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14, fontWeight: 600 }}>{FACE_COLOUR[orientation.front]} in front · yellow on top</p>
+        {deviation.length > 0 && <p className="tip" role="status"><Icon name="rotate" />That turn wasn’t the one. Undo it: {describe(invert(deviation[deviation.length - 1]))}</p>}
+        <p style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14, fontWeight: 600 }}>
+          {FACE_COLOUR[orientation.front]} in front · yellow on top
+          {smartCubeAvailable() && !smart && <> · <button className="startover" style={{ padding: 0, color: 'inherit', textDecoration: 'underline' }} onClick={async () => { try { setSmart(await connectGan()); } catch { /* cancelled */ } }}>Connect smart cube</button></>}
+          {smart && <> · {smart.name} connected</>}
+        </p>
       </div>
     </main>
   );

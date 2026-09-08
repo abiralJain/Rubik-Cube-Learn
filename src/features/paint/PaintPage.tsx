@@ -111,7 +111,6 @@ export default function PaintPage() {
               role="radio"
               style={{ '--fill': COLOUR_CSS[f] } as CSSProperties}
               aria-checked={f === active}
-              aria-pressed={f === active}
               aria-label={`${FACE_COLOUR[f]}, ${remaining[f]} left. Press ${i + 1}`}
               data-light={LIGHT.has(f) ? '' : undefined}
               data-empty={remaining[f] <= 0 ? '' : undefined}

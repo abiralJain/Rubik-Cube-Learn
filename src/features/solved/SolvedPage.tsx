@@ -33,7 +33,6 @@ export default function SolvedPage() {
 
   // choreography: settle → bloom (glow + iridescence + chime) → copy and actions
   useEffect(() => {
-    if (import.meta.env.DEV) console.info('[solved] effect run', cubeReady);
     setShell({ tint: null, mode: undefined });
     if (!cubeReady) return;
     const t1 = setTimeout(() => {
@@ -44,7 +43,7 @@ export default function SolvedPage() {
       if (settings.voice) setTimeout(() => speak('You solved it!'), 300);
     }, reduce ? 200 : 700);
     const t2 = setTimeout(() => setPhase('copy'), reduce ? 400 : 1400);
-    return () => { if (import.meta.env.DEV) console.info('[solved] effect cleanup'); clearTimeout(t1); clearTimeout(t2); setShell({ mode: undefined, tint: null }); };
+    return () => { clearTimeout(t1); clearTimeout(t2); setShell({ mode: undefined, tint: null }); };
   }, [setShell, reduce, settings.voice, cubeReady]);
 
   // turning the cube out of solved dims the memento honestly
@@ -105,18 +104,16 @@ export default function SolvedPage() {
             </motion.div>
           )}
         </AnimatePresence>
-        <AnimatePresence>
-          {phase === 'copy' && (
-            <motion.div key="actions" className="solved-actions" initial={reduce ? { opacity: 0 } : { opacity: 0, transform: 'translateY(12px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} transition={{ duration: 0.4, delay: 0.45, ease }}>
-              <Button tone="holo" onClick={share} block><Icon name="share" /> Share</Button>
-              <div className="row">
-                <Button variant="ghost" onClick={solveAgain}><Icon name="replay" /> Solve again</Button>
-                <Button variant="ghost" onClick={scrambleForMe}><Icon name="rotate" /> Scramble for me</Button>
-              </div>
-              <p className="keep">Keep turning it. Solved is a place you can always get back to.</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {phase === 'copy' && (
+          <Reveal className="solved-actions" delay={450}>
+            <Button tone="holo" onClick={share} block><Icon name="share" /> Share</Button>
+            <div className="row">
+              <Button variant="ghost" onClick={solveAgain}><Icon name="replay" /> Solve again</Button>
+              <Button variant="ghost" onClick={scrambleForMe}><Icon name="rotate" /> Scramble for me</Button>
+            </div>
+            <p className="keep">Keep turning it. Solved is a place you can always get back to.</p>
+          </Reveal>
+        )}
       </div>
       <AnimatePresence>
         {sheet && (<>
@@ -136,6 +133,13 @@ export default function SolvedPage() {
       </AnimatePresence>
     </main>
   );
+}
+
+/** CSS-driven entrance (off the main thread): fades and rises after `delay` ms. */
+function Reveal({ className, delay, children }: { className?: string; delay: number; children: React.ReactNode }) {
+  const [on, setOn] = useState(false);
+  useEffect(() => { const id = requestAnimationFrame(() => requestAnimationFrame(() => setOn(true))); return () => cancelAnimationFrame(id); }, []);
+  return <div className={`reveal ${className ?? ''}`} data-in={on ? '' : undefined} style={{ transitionDelay: `${delay}ms` }}>{children}</div>;
 }
 
 function sessionStartFacelets(): string {

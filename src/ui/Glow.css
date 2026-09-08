@@ -1,14 +1,14 @@
 .glow {
   position: fixed; inset: -20vmin; z-index: -1; pointer-events: none;
-  filter: blur(60px);
   opacity: 1;
   transition: opacity 600ms var(--ease-out);
 }
 .glow i {
   position: absolute; display: block;
-  width: 80vmin; height: 80vmin; border-radius: 50%;
-  background: radial-gradient(circle, var(--blob) 0%, transparent 70%);
-  opacity: 0.22;
+  width: 110vmin; height: 110vmin; border-radius: 50%;
+  /* soft-edged gradient instead of a blur filter: the browser only composites a transform per frame */
+  background: radial-gradient(circle, var(--blob) 0%, color-mix(in srgb, var(--blob) 55%, transparent) 22%, transparent 62%);
+  opacity: 0.2;
   transition: opacity 600ms var(--ease-out), transform 900ms var(--ease-in-out);
   will-change: transform;
   animation: drift var(--dur) ease-in-out infinite alternate;

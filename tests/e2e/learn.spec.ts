@@ -2,8 +2,9 @@ import { test, expect, type Page } from '@playwright/test';
 import Cube from 'cubejs';
 
 const SOLVED = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
-async function seed(page: Page, facelets: string) {
+async function seed(page: Page, facelets: string, fast = false) {
   await page.goto('/');
+  if (fast) await page.evaluate(() => localStorage.setItem('cube.fast', '1'));
   await page.evaluate((f) => localStorage.setItem('cube.session.v1', JSON.stringify({ state: { facelets: f, paintHistory: [], lastInput: 'paint', learn: null, solved: null, settings: { sound: false, voice: false, seenPaintHint: true, seenLearnHint: false } }, version: 1 })), facelets);
   await page.goto('/learn');
   await page.waitForFunction(() => (window as unknown as { __cube?: { ready: boolean } }).__cube?.ready === true, null, { timeout: 30_000 });
@@ -20,14 +21,14 @@ const stickerXY = (page: Page, i: number) => page.evaluate((i) => {
 
 test('pressing Next through a random scramble ends on the solved screen with a solved cube', async ({ page }) => {
   test.setTimeout(400_000);
-  await seed(page, Cube.random().asString());
-  const meta = page.locator('.learn-head .meta');
+  await seed(page, Cube.random().asString(), true);
+  const moveText = () => page.evaluate(() => (document.querySelector('.learn-head .meta')?.textContent ?? '').split('·')[0].trim() + '|' + (document.querySelector('.glyph')?.textContent ?? ''));
   for (let i = 0; i < 400; i++) {
     if (/\/solved/.test(page.url())) break;
-    const before = await meta.innerText().catch(() => '');
+    const before = await moveText().catch(() => '');
     await page.keyboard.press('Space');
-    // wait until the card advanced (or we left the page)
-    await page.waitForFunction((b) => !location.pathname.startsWith('/learn') || document.querySelector('.learn-head .meta')?.textContent !== b, before, { timeout: 4000 }).catch(() => {});
+    // wait until the card advanced (or we left the page); the timer part of the meta is ignored
+    await page.waitForFunction((b) => !location.pathname.startsWith('/learn') || ((document.querySelector('.learn-head .meta')?.textContent ?? '').split('·')[0].trim() + '|' + (document.querySelector('.glyph')?.textContent ?? '')) !== b, before, { timeout: 4000 }).catch(() => {});
   }
   await expect(page).toHaveURL(/\/solved/, { timeout: 5000 });
   const f = await page.evaluate(() => JSON.parse(localStorage.getItem('cube.session.v1')!).state.facelets as string);
