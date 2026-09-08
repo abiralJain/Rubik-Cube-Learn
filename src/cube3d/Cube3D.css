@@ -1,0 +1,17 @@
+.cube3d { position: absolute; inset: 0; touch-action: none; outline: none; }
+.cube3d canvas { display: block; cursor: grab; opacity: 0; transition: opacity 420ms var(--ease-out); }
+.cube3d[data-ready] canvas { opacity: 1; }
+.cube3d[data-dragging] canvas { cursor: grabbing; }
+.cube3d:focus-visible { outline: none; }
+.cube3d:focus-visible::after {
+  content: ''; position: absolute; inset: 12px; border-radius: var(--r-lg); pointer-events: none;
+  box-shadow: 0 0 0 3px var(--ink);
+}
+.cube-poster { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.cube-poster::before {
+  content: ''; width: 34%; aspect-ratio: 1; border-radius: 22%;
+  background: conic-gradient(from 210deg, var(--c-red), var(--c-orange), var(--c-yellow), var(--c-green), var(--c-blue), var(--c-red));
+  filter: blur(28px); opacity: .35;
+  animation: poster-breathe 2.4s ease-in-out infinite;
+}
+@keyframes poster-breathe { 0%,100% { transform: scale(.94); } 50% { transform: scale(1.04); } }
