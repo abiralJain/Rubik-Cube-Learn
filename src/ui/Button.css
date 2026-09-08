@@ -1,0 +1,46 @@
+.btn {
+  appearance: none; border: 0; cursor: pointer; user-select: none; -webkit-user-select: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: var(--control-h); padding: 0 24px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: 0;
+  transition: transform 100ms var(--ease-out), box-shadow 100ms var(--ease-out), background-color 220ms var(--ease-out), color 220ms var(--ease-out), opacity 200ms var(--ease-out);
+  will-change: transform;
+  touch-action: manipulation;
+}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { cursor: default; pointer-events: none; }
+.btn svg { width: 22px; height: 22px; flex: 0 0 auto; }
+
+.btn-candy {
+  color: #fff;
+  background: var(--tone, var(--c-green));
+  box-shadow: var(--gloss), 0 8px 20px -6px color-mix(in srgb, var(--tone, var(--c-green)) 55%, transparent);
+}
+.btn-candy:active { box-shadow: var(--gloss-pressed), 0 2px 6px -2px color-mix(in srgb, var(--tone, var(--c-green)) 55%, transparent); }
+.btn-candy[data-light] { color: var(--ink); }
+.btn-candy:disabled { background: var(--ink-4); color: var(--ink-3); box-shadow: none; }
+.btn-candy[data-ready] { animation: pop 600ms var(--spring); }
+@keyframes pop { 0% { transform: scale(0.96); } 60% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+.btn-ghost {
+  color: var(--ink);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: var(--shadow-1), inset 0 1px 0 var(--glass-edge);
+}
+.btn-ghost:disabled { opacity: 0.35; }
+
+.btn-icon { width: var(--tap); min-height: var(--tap); padding: 0; border-radius: 50%; }
+.btn-icon svg { width: 20px; height: 20px; }
+
+.btn-block { width: 100%; }
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-candy:hover:not(:disabled) { filter: brightness(1.04); }
+  .btn-ghost:hover:not(:disabled) { background: #fff; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-candy[data-ready] { animation: none; }
+}

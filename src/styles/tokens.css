@@ -1,0 +1,55 @@
+:root {
+  --ground: #FFFFFF;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.8);
+  --glass-edge: rgba(255, 255, 255, 0.9);
+  --ink: #1B1830;
+  --ink-2: rgba(27, 24, 48, 0.6);
+  --ink-3: rgba(27, 24, 48, 0.3);
+  --ink-4: rgba(27, 24, 48, 0.08);
+
+  --c-white: #FFFDF8;
+  --c-yellow: #FFD54A;
+  --c-red: #F0574A;
+  --c-orange: #FF9440;
+  --c-green: #3DBE72;
+  --c-blue: #3E7BE0;
+  --c-white-deep: #E3DFD4;
+  --c-yellow-deep: #E0B200;
+  --c-red-deep: #C93E33;
+  --c-orange-deep: #D9742A;
+  --c-green-deep: #2E9A5A;
+  --c-blue-deep: #2F62BF;
+
+  --r-sm: 16px;
+  --r-md: 28px;
+  --r-lg: 36px;
+  --r-pill: 999px;
+
+  --shadow-1: 0 2px 4px rgba(27, 24, 48, 0.04), 0 12px 32px rgba(27, 24, 48, 0.08);
+  --shadow-2: 0 4px 8px rgba(27, 24, 48, 0.06), 0 24px 56px rgba(27, 24, 48, 0.12);
+  --gloss: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -3px 0 rgba(0, 0, 0, 0.14);
+  --gloss-pressed: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+
+  --spring: cubic-bezier(0.2, 1.4, 0.4, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --holo: linear-gradient(120deg, #ffd6e8, #fff3b0, #c9f5e1, #c7dcff, #f0d3ff);
+
+  --font-display: 'Fredoka Variable', system-ui, -apple-system, sans-serif;
+  --font-text: 'Nunito Variable', system-ui, -apple-system, sans-serif;
+
+  --pad: 20px;
+  --dock-max: 520px;
+  --control-h: 56px;
+  --tap: 44px;
+}
+
+@media (min-width: 900px) {
+  :root { --pad: 28px; --control-h: 52px; }
+}
+@media (min-width: 1600px) {
+  :root { --pad: 40px; --control-h: 64px; }
+}
