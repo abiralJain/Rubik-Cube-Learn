@@ -27,7 +27,7 @@ export const LAYER_PX_PER_QUARTER = 140;
 
 export const COLORS: Record<string, string> = {
   U: '#FFFDF8', D: '#FFD54A', R: '#F0574A', L: '#FF9440', F: '#3DBE72', B: '#3E7BE0',
-  '.': '#5F5A66',
+  '.': '#7C7689',
 };
 export const BODY_COLOR = '#35304A';
 

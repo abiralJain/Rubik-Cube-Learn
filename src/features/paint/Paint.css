@@ -1,0 +1,47 @@
+.paint-hint {
+  position: absolute; left: 0; right: 0; top: 8px; text-align: center; pointer-events: none;
+  padding: 0 var(--pad);
+  font-family: var(--font-text); font-weight: 600; font-size: 17px; color: var(--ink-2);
+}
+.paint-hint b { color: var(--ink); font-weight: 700; }
+.paint-count {
+  position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; pointer-events: none;
+  font-size: 14px; color: var(--ink-2); font-weight: 600;
+}
+.swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.sw {
+  position: relative; appearance: none; border: 0; padding: 0; background: none; cursor: pointer;
+  aspect-ratio: 1; display: grid; place-items: center;
+  transition: transform 320ms var(--spring), opacity 250ms var(--ease-out);
+  touch-action: manipulation;
+}
+.sw::after { content: ''; position: absolute; inset: -6px; } /* 44px+ hit area */
+.sw i {
+  display: block; width: 100%; height: 100%; border-radius: 24%;
+  background: var(--fill);
+  box-shadow: var(--gloss), 0 6px 14px -6px color-mix(in srgb, var(--fill) 60%, transparent);
+  transition: box-shadow 200ms var(--ease-out), transform 100ms var(--ease-out);
+}
+.sw b {
+  position: absolute; font-family: var(--font-display); font-weight: 700; font-size: 17px;
+  color: rgba(255,255,255,.96); text-shadow: 0 1px 2px rgba(0,0,0,.25); pointer-events: none;
+}
+.sw[data-light] b { color: rgba(27,24,48,.62); text-shadow: none; }
+.sw:active i { transform: scale(.94); box-shadow: var(--gloss-pressed); }
+.sw[aria-pressed="true"] { transform: translateY(-8px) scale(1.06); }
+.sw[aria-pressed="true"] i { box-shadow: var(--gloss), 0 0 0 3px var(--ground), 0 0 0 6px var(--ink), 0 10px 22px -8px color-mix(in srgb, var(--fill) 70%, transparent); }
+.sw[data-empty] { opacity: .28; pointer-events: none; transform: none; }
+.sw:focus-visible { outline: 3px solid var(--ink); outline-offset: 5px; border-radius: 24%; }
+.paint-row { display: flex; gap: 10px; align-items: stretch; }
+.paint-row .btn { flex: 0 0 auto; }
+.paint-row .btn-primary { flex: 1; }
+.paint-issue {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px 12px 16px;
+  font-size: 15px; color: var(--ink); font-weight: 600; line-height: 1.35;
+}
+.paint-issue .btn { flex: 0 0 auto; min-height: 40px; padding: 0 16px; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) {
+  .sw { transition: opacity 250ms var(--ease-out); }
+  .sw[aria-pressed="true"] { transform: none; }
+}
+@media (min-width: 900px) { .swatches { gap: 14px; } }
