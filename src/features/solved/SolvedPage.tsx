@@ -19,7 +19,7 @@ const SOLVED_VIEW = { top: 'D' as const, front: 'F' as const, yaw: -0.55, pitch:
 export default function SolvedPage() {
   const nav = useNavigate();
   const reduce = useReducedMotion();
-  const { solved, facelets, setFacelets, clearSession, lastInput, settings, startLearn } = useSession();
+  const { solved, facelets, setFacelets, clearSession, settings, startLearn, history } = useSession();
   const setShell = useShellState((s) => s.set);
   const [display, setDisplay] = useState<string>(isSolved(facelets) ? SOLVED : facelets);
   const [phase, setPhase] = useState<'settle' | 'bloom' | 'copy'>('settle');
@@ -27,6 +27,7 @@ export default function SolvedPage() {
   const [card, setCard] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const stats = solved ?? { ms: 0, moves: 0, at: Date.now() };
+  const firstSolve = history.length <= 1;
   const cubeReady = useStageStore((st) => st.ready);
 
   // choreography: settle → bloom (glow + iridescence + chime) → copy and actions
@@ -38,11 +39,11 @@ export default function SolvedPage() {
       setShell({ mode: 'holo' });
       const c = cubeHandle()?.controller; if (c) { c.bloom(); c.celebrate('#FFF3B0'); }
       sfx.solvedChime(); if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
-      if (settings.voice) setTimeout(() => speak('You solved it!'), 300);
+      if (settings.voice) setTimeout(() => speak(firstSolve ? 'You solved it. Every stone is lit.' : 'Solved again.'), 300);
     }, reduce ? 200 : 700);
     const t2 = setTimeout(() => setPhase('copy'), reduce ? 400 : 1400);
     return () => { clearTimeout(t1); clearTimeout(t2); setShell({ mode: undefined, tint: null }); };
-  }, [setShell, reduce, settings.voice, cubeReady]);
+  }, [setShell, reduce, settings.voice, cubeReady, firstSolve]);
 
   // turning the cube out of solved dims the memento honestly
   const onMoveDone = useCallback((_m: string, f: string) => {
@@ -78,7 +79,7 @@ export default function SolvedPage() {
     startLearn(f);
     nav('/play');
   };
-  const solveAgain = () => { clearSession(); nav(lastInput === 'camera' ? '/scan' : '/fix'); };
+  const solveAgain = () => { clearSession(); nav('/scan'); };
 
   const mm = Math.floor(stats.ms / 60000), ss = Math.floor((stats.ms % 60000) / 1000);
   const stageRef = useStage({ facelets: display, layerTurns: true, interactive: true, orientation: SOLVED_VIEW, onMoveDone, fill: 0.74 });
@@ -92,7 +93,7 @@ export default function SolvedPage() {
           {phase === 'copy' && (
             <motion.div key="copy" className="solved-copy" initial={reduce ? { opacity: 0 } : { opacity: 0, transform: 'translateY(10px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} transition={{ duration: 0.4, ease }}>
               <p className="caps" data-tint>Solved</p>
-              <h1>You solved it.</h1>
+              <h1>{firstSolve ? 'You solved it.' : 'Solved again.'}</h1>
               <motion.div className="stats" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } } }}>
                 {[[`${mm}:${String(ss).padStart(2, '0')}`, 'Time'], [String(stats.moves), 'Turns'], ['7', 'Stages']].map(([v, l]) => (
                   <motion.div key={l} className="stat" variants={{ hidden: { opacity: 0, transform: 'translateY(6px)' }, show: { opacity: 1, transform: 'translateY(0px)' } }} transition={{ duration: 0.3, ease }}>
@@ -105,12 +106,14 @@ export default function SolvedPage() {
         </AnimatePresence>
         {phase === 'copy' && (
           <Reveal className="solved-actions" delay={450}>
-            <Button tone="holo" onClick={share} block><Icon name="share" /> Share</Button>
+            {firstSolve
+              ? <Button tone="holo" onClick={() => nav('/learn')} block><Icon name="learn" /> Learn why it worked</Button>
+              : <Button tone="holo" onClick={share} block><Icon name="share" /> Share</Button>}
             <div className="row">
-              <Button variant="secondary" onClick={solveAgain}>Solve again</Button>
-              <Button variant="secondary" onClick={scrambleForMe}>Scramble for me</Button>
+              <Button variant="secondary" onClick={solveAgain}><Icon name="camera" /> Solve again</Button>
+              <Button variant="secondary" onClick={firstSolve ? share : scrambleForMe}>{firstSolve ? <><Icon name="share" /> Share</> : 'Scramble for me'}</Button>
             </div>
-            <p className="keep">Keep turning it. Solved is a place you can always get back to.</p>
+            <p className="keep">Scramble it and show me again whenever you like. Every stage lights its stone.</p>
           </Reveal>
         )}
       </div>

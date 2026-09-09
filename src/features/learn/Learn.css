@@ -20,3 +20,24 @@
 .learn .enter { animation: enter 320ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
 @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .learn .enter { animation: none; } }
+
+/* chapter: the cube performs the move above the text */
+.learn.chapter { gap: 0; }
+.chapter-stage { position: relative; height: 40vh; min-height: 240px; max-height: 420px; pointer-events: none; }
+.chapter-alg { position: absolute; left: 0; right: 0; bottom: 6px; display: flex; justify-content: center; gap: 10px; pointer-events: none; }
+.chapter-alg span { font-size: 15px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; transition: color 200ms var(--ease-out), transform 200ms var(--ease-out); }
+.chapter-alg span.now { color: var(--ink); transform: scale(1.25); }
+.chapter-alg span.done { color: var(--ink-4); }
+.chapter-body { padding-top: 14px; padding-bottom: calc(96px + var(--safe-bottom)); pointer-events: auto; }
+.chapter-try { display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 6px 0 4px; }
+.say-small { text-align: center; font-size: 17px; line-height: 22px; font-weight: 600; color: var(--ink); min-height: 22px; }
+.chapter-try .chips { justify-content: center; }
+.chapter-foot { padding-top: 8px; }
+@media (min-width: 760px) and (orientation: landscape) {
+  .learn.chapter { display: grid; grid-template-columns: 55fr 45fr; align-items: center; column-gap: 24px; padding: 0 var(--pad); }
+  .chapter-stage { height: 100%; max-height: none; min-height: 60vh; }
+  .chapter-body { max-height: calc(100dvh - var(--topbar-h) - var(--safe-top)); overflow: auto; padding-right: 8px; }
+}
+.chapter-back { appearance: none; border: 0; background: none; color: var(--ink-2); font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; padding: 0; cursor: pointer; align-self: flex-start; }
+.chapter-back svg { width: 14px; height: 14px; }
+@media (min-width: 760px) and (orientation: landscape) { .chapter-alg { bottom: 12%; } }
