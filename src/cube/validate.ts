@@ -6,7 +6,7 @@ export type Validation =
   | { ok: true }
   | { ok: false; reason: ValidationReason; message: string; suspects: number[]; candidates: number };
 
-function core(f: Facelets): { ok: true } | { ok: false; reason: ValidationReason; bad: number[] } {
+export function core(f: Facelets): { ok: true } | { ok: false; reason: ValidationReason; bad: number[] } {
   if (f.length !== 54 || f.includes('.')) return { ok: false, reason: 'incomplete', bad: [] };
   for (const face of FACES) {
     const n = f.split('').filter((c) => c === face).length;
@@ -37,23 +37,37 @@ function duplicates(p: number[]): number[] {
   return [...seen.values()].filter((v) => v.length > 1).flat();
 }
 
-const swapAt = (f: string, a: number, b: number) => { const arr = f.split(''); [arr[a], arr[b]] = [arr[b], arr[a]]; return arr.join(''); };
-const rotateCornerAt = (f: string, i: number, dir: 1 | 2) => { const fc = CORNER_FACELET[i]; const arr = f.split(''); const v = fc.map((x) => f[x]); fc.forEach((x, k) => { arr[x] = v[(k + dir) % 3]; }); return arr.join(''); };
-const flipEdgeAt = (f: string, i: number) => swapAt(f, EDGE_FACELET[i][0], EDGE_FACELET[i][1]);
+export const swapAt = (f: string, a: number, b: number) => { const arr = f.split(''); [arr[a], arr[b]] = [arr[b], arr[a]]; return arr.join(''); };
+export const rotateCornerAt = (f: string, i: number, dir: 1 | 2) => { const fc = CORNER_FACELET[i]; const arr = f.split(''); const v = fc.map((x) => f[x]); fc.forEach((x, k) => { arr[x] = v[(k + dir) % 3]; }); return arr.join(''); };
+export const flipEdgeAt = (f: string, i: number) => swapAt(f, EDGE_FACELET[i][0], EDGE_FACELET[i][1]);
+export const setAt = (f: string, i: number, c: string) => f.slice(0, i) + c + f.slice(i + 1);
 
-/** Single-edit repairs that make the cube valid, each with the facelets it touched. */
-function repairs(f: Facelets, deep: boolean): number[][] {
-  const out: number[][] = [];
-  const tryIt = (g: string, touched: number[]) => { if (core(g).ok) out.push(touched); };
-  for (let i = 0; i < 8; i++) { tryIt(rotateCornerAt(f, i, 1), CORNER_FACELET[i]); tryIt(rotateCornerAt(f, i, 2), CORNER_FACELET[i]); }
-  for (let i = 0; i < 12; i++) tryIt(flipEdgeAt(f, i), EDGE_FACELET[i]);
-  if (out.length || !deep) return out;
-  // two-sticker swaps anywhere (models "I painted two stickers in each other's spots")
+export type RepairKind = 'twist' | 'flip' | 'recolour' | 'swap';
+export interface Repair { kind: RepairKind; facelets: string; touched: number[] }
+
+/**
+ * Repairs that make the cube valid, cheapest first: one corner turned, one edge flipped, one sticker recoloured,
+ * two stickers swapped. The search stops at the first tier that finds anything unless `all` is set.
+ */
+export function repairs(f: Facelets, opts: { deep?: boolean; all?: boolean } = {}): Repair[] {
+  const out: Repair[] = [];
+  const tryIt = (kind: RepairKind, g: string, touched: number[]) => { if (core(g).ok) out.push({ kind, facelets: g, touched }); };
+  for (let i = 0; i < 8; i++) { tryIt('twist', rotateCornerAt(f, i, 1), [...CORNER_FACELET[i]]); tryIt('twist', rotateCornerAt(f, i, 2), [...CORNER_FACELET[i]]); }
+  for (let i = 0; i < 12; i++) tryIt('flip', flipEdgeAt(f, i), [...EDGE_FACELET[i]]);
+  if (out.length && !opts.all) return out;
+  // one sticker read as the wrong colour (the camera's usual slip)
+  for (let a = 0; a < 54; a++) {
+    if (isCentre(a)) continue;
+    for (const c of FACES) if (c !== f[a]) tryIt('recolour', setAt(f, a, c), [a]);
+  }
+  if (out.length && !opts.all) return out;
+  if (!opts.deep && !opts.all) return out;
+  // two stickers in each other's places
   for (let a = 0; a < 54; a++) {
     if (isCentre(a)) continue;
     for (let b = a + 1; b < 54; b++) {
       if (isCentre(b) || f[a] === f[b]) continue;
-      tryIt(swapAt(f, a, b), [a, b]);
+      tryIt('swap', swapAt(f, a, b), [a, b]);
     }
   }
   return out;
@@ -61,11 +75,11 @@ function repairs(f: Facelets, deep: boolean): number[][] {
 
 const MESSAGES: Record<ValidationReason, string> = {
   incomplete: 'Some stickers are still empty.',
-  counts: 'One colour is used more than nine times.',
+  counts: 'A colour is used more than nine times.',
   centres: 'A centre sticker has the wrong colour.',
   'bad-piece': 'Two of these colours never share a piece.',
-  'corner-twist': 'One corner is turned. Its three colours go round the other way.',
-  'edge-flip': 'One edge is flipped. Its two colours are swapped.',
+  'corner-twist': 'One corner reads turned.',
+  'edge-flip': 'One edge reads flipped.',
   parity: 'Two stickers are swapped somewhere.',
 };
 
@@ -75,7 +89,7 @@ export function validate(f: Facelets, opts: { recentlyEdited?: number[] } = {}):
   let suspects = r.bad;
   let candidates = suspects.length ? 1 : 0;
   if (!suspects.length && r.reason !== 'incomplete') {
-    const reps = repairs(f, r.reason === 'parity' || r.reason === 'bad-piece');
+    const reps = repairs(f, { deep: r.reason === 'parity' || r.reason === 'bad-piece' }).map((x) => x.touched);
     candidates = reps.length;
     if (reps.length === 1) suspects = reps[0];
     else if (reps.length > 1) {
@@ -91,7 +105,7 @@ export function validate(f: Facelets, opts: { recentlyEdited?: number[] } = {}):
   return { ok: false, reason: r.reason, message: MESSAGES[r.reason], suspects, candidates };
 }
 
-/** "the white-green edge", "the white, red and green corner" */
+/** "the white–green edge", "the white, red and green corner" */
 export function describePiece(f: Facelets, facelets: number[]): string {
   const names = facelets.map((i) => FACE_COLOUR[f[i] as Face]);
   return names.length === 2 ? `the ${names[0]}–${names[1]} edge` : `the ${names.slice(0, -1).join(', ')} and ${names[names.length - 1]} corner`;

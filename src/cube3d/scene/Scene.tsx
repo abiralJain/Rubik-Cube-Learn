@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { MathUtils, NeutralToneMapping, type Mesh, type PerspectiveCamera } from 'three';
-import { APPARENT_RADIUS, CAMERA_ELEVATION, CAMERA_FOV, CUBE_HALF, FILL, MAX_RADIUS_PX } from '../constants';
+import { NeutralToneMapping, type Mesh, type PerspectiveCamera } from 'three';
+import { CUBE_HALF } from '../constants';
 import { bodyGeometry, bodyMaterial, coreGeometry, environmentFor, makeCoreMaterial, makeStickerMaterial, shadowMaterial, stickerGeometry, COLORS_FROM } from '../geometry';
 import { SLOTS, STICKERS } from '../placements';
 import type { CubeController } from '../controller';
@@ -34,25 +34,13 @@ export function SceneEnvironment() {
   return null;
 }
 
-export function CameraFit({ fill = FILL, targetY = -0.3 }: { fill?: number; targetY?: number }) {
+/** Keeps the controller's viewport in sync; the controller itself places the camera from its frame each frame. */
+export function CameraFit({ ctrl }: { ctrl: CubeController }) {
   const { camera, size } = useThree();
   useLayoutEffect(() => {
-    const cam = camera as PerspectiveCamera;
-    cam.fov = CAMERA_FOV;
-    const vHalf = Math.tan(MathUtils.degToRad(cam.fov) / 2);
-    const aspect = size.width / size.height;
-    const halfShort = aspect >= 1 ? vHalf : vHalf * aspect;
-    // the object should feel held, not loom: cap its on-screen radius on large canvases
-    const shortPx = Math.min(size.width, size.height);
-    const f = Math.min(fill, (2 * MAX_RADIUS_PX) / shortPx);
-    const d = APPARENT_RADIUS / (f * halfShort);
-    const phi = MathUtils.degToRad(CAMERA_ELEVATION);
-    cam.position.set(0, d * Math.sin(phi) + targetY, d * Math.cos(phi));
-    cam.lookAt(0, targetY, 0);
-    cam.aspect = aspect;
-    cam.near = 1; cam.far = 200;
-    cam.updateProjectionMatrix();
-  }, [camera, size.width, size.height, fill, targetY]);
+    ctrl.camera = camera as PerspectiveCamera;
+    ctrl.setViewport(size.width, size.height);
+  }, [ctrl, camera, size.width, size.height]);
   return null;
 }
 

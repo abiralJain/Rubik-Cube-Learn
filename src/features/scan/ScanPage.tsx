@@ -1,7 +1,7 @@
-import './Camera.css';
+import './Scan.css';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router';
-import { CubeStage } from '@/cube3d/CubeStage';
+import { useStage } from '@/cube3d/scene/stage';
 import { Button } from '@/ui/Button';
 import { Icon } from '@/ui/Icon';
 import { useShellState } from '@/ui/Shell';
@@ -115,7 +115,7 @@ export default function CameraPage() {
   useEffect(() => {
     if (!done) return;
     setFacelets(captured, 'camera');
-    if (validation?.ok) { sfx.stageChime(); setTimeout(() => nav('/learn'), 900); }
+    if (validation?.ok) { sfx.stageChime(); setTimeout(() => nav('/play'), 900); }
   }, [done, captured, validation, setFacelets, nav]);
 
   const preview = useMemo(() => {
@@ -124,7 +124,8 @@ export default function CameraPage() {
     live.forEach((f, i) => { if (i !== 4) arr[idx(step.face, i)] = f ?? '.'; });
     return arr.join('');
   }, [captured, live, step.face, done]);
-  const orientation = useMemo(() => ({ top: step.top, front: step.face, yaw: 0, pitch: 0.15 }), [step]);
+  const orientation = useMemo(() => ({ top: step.top, front: step.face, yaw: -0.35, pitch: 0.2 }), [step]);
+  const stageRef = useStage({ facelets: preview, interactive: false, orientation, rippleOnTap: false, fill: 0.9 });
 
   if (status === 'denied' || status === 'none') {
     return (
@@ -132,13 +133,14 @@ export default function CameraPage() {
         <Icon name="camera" style={{ width: 40, height: 40, color: 'var(--ink-3)' }} />
         <h1 style={{ fontSize: 30 }}>{status === 'none' ? 'No camera here.' : 'The camera is off.'}</h1>
         <p style={{ color: 'var(--ink-2)' }}>{status === 'none' ? 'That is fine. Colouring the stickers in takes about a minute.' : 'Allow the camera in your browser settings, or colour the stickers in instead.'}</p>
-        <Button onClick={() => nav('/paint')} block><Icon name="paint" /> Colour it in</Button>
+        <Button onClick={() => nav('/fix')} block><Icon name="paint" /> Colour it in</Button>
       </div></main>
     );
   }
 
   return (
-    <main className="screen" aria-label="Scan your cube">
+    <main className="screen scan" aria-label="Scan your cube">
+      <Button variant="icon" className="flow-close" aria-label="Back" onClick={() => nav('/')}><Icon name="close" /></Button>
       <div className="stage cam-stage">
         <div className="cam-frame" data-mirror={mirror ? '' : undefined}>
           <video ref={videoRef} playsInline muted />
@@ -146,8 +148,8 @@ export default function CameraPage() {
             {live.map((f, i) => <i key={i} style={{ '--cell': f ? COLOUR_CSS[f] + (i === 4 ? 'cc' : '99') : 'transparent' } as CSSProperties} />)}
           </div>
           <div className="cam-flash" data-on={flash ? '' : undefined} />
-          <div className="cam-mini"><CubeStage facelets={preview} interactive={false} orientation={orientation} fill={0.92} rippleOnTap={false} /></div>
         </div>
+        <div className="stage cam-cube" ref={stageRef} />
       </div>
       <div className="dock">
         <p className="cam-prompt" aria-live="polite">
@@ -160,7 +162,7 @@ export default function CameraPage() {
         <div className="cam-row">
           <Button variant="secondary" onClick={retake} disabled={stepIdx === 0}><Icon name="undo" /> Retake</Button>
           {done && !validation?.ok
-            ? <Button onClick={() => nav('/paint')}><Icon name="paint" /> Fix by hand</Button>
+            ? <Button onClick={() => nav('/fix')}><Icon name="paint" /> Fix by hand</Button>
             : <Button tone={FACE_COLOUR[step.face] as 'green'} onClick={manual} disabled={done}><Icon name="camera" /> Capture</Button>}
         </div>
       </div>

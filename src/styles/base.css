@@ -34,19 +34,18 @@ a { color: inherit; text-decoration: none; }
 :focus { outline: none; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: var(--r-sm); }
 
-/* App shell */
-.shell {
-  position: relative;
-  min-height: 100%;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  isolation: isolate;
-}
+/* ---------- App shell ----------
+   Layers: room light (-1) · the cube canvas (1) · content (2) · top bar (5) · tab bar (6) · sheets (20+).
+   Content lets pointer events through to the cube except where it draws something. */
+:root { --topbar-h: 60px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
+.shell { position: relative; min-height: 100%; display: grid; grid-template-rows: auto 1fr; isolation: isolate; }
+.content { position: relative; z-index: 2; pointer-events: none; }
+.content > * { pointer-events: none; }
 .topbar {
   position: sticky; top: 0; z-index: 5;
   display: flex; align-items: center; justify-content: space-between;
-  height: calc(env(safe-area-inset-top) + 60px);
-  padding: env(safe-area-inset-top) var(--pad) 0;
+  height: calc(var(--safe-top) + var(--topbar-h));
+  padding: var(--safe-top) var(--pad) 0;
   pointer-events: none;
 }
 .topbar > * { pointer-events: auto; }
@@ -56,17 +55,19 @@ a { color: inherit; text-decoration: none; }
 }
 .toggles { display: flex; gap: 10px; }
 
-/* Screen layout: hero stage above, dock below; side by side on wide screens */
+/* ---------- Screen layout: the stage (a placeholder the cube glides into) above, the dock below;
+   side by side on landscape screens. The screen is exactly one viewport tall: no scrolling under the tab bar. */
 .screen {
   display: grid;
-  grid-template-rows: minmax(46vh, 1fr) auto;
-  min-height: calc(100dvh - 60px);
+  grid-template-rows: minmax(38vh, 1fr) auto;
+  min-height: calc(100dvh - var(--topbar-h) - var(--safe-top));
 }
-.stage { position: relative; min-height: 0; contain: layout paint; }
+.stage { position: relative; min-height: 0; pointer-events: none; }
 .dock {
   display: flex; flex-direction: column; gap: 12px;
   width: 100%; max-width: var(--dock-max); margin: 0 auto;
-  padding: 0 var(--pad) calc(var(--pad) + env(safe-area-inset-bottom));
+  padding: 0 var(--pad) calc(var(--pad) + var(--safe-bottom));
+  pointer-events: auto;
 }
 @media (min-width: 760px) and (orientation: landscape) {
   .screen { grid-template-columns: 55fr 45fr; grid-template-rows: 1fr; align-items: center; }
@@ -77,13 +78,16 @@ a { color: inherit; text-decoration: none; }
 @media (min-width: 1440px) and (orientation: landscape) { .dock { --dock-max: 480px; } }
 @media (min-width: 1600px) and (orientation: landscape) { .screen { grid-template-columns: 65fr 35fr; } .dock { --dock-max: 560px; } }
 /* portrait tablets stack like a phone, with more air */
-@media (min-width: 600px) and (orientation: portrait) { .screen { grid-template-rows: minmax(52vh, 1fr) auto; } .dock { --dock-max: 520px; gap: 14px; } }
+@media (min-width: 600px) and (orientation: portrait) { .screen { grid-template-rows: minmax(50vh, 1fr) auto; } .dock { --dock-max: 520px; gap: 14px; } }
+/* short phones: less stage, tighter dock, never a scroll */
+@media (orientation: portrait) and (max-height: 900px) { .screen { grid-template-rows: minmax(30vh, 1fr) auto; } .dock { gap: 10px; } }
+@media (orientation: portrait) and (max-height: 700px) { .screen { grid-template-rows: minmax(24vh, 1fr) auto; } }
 
 /* Poster shown before the 3D cube boots (global: the cube's own CSS loads lazily) */
 .cube-poster-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .cube-poster { position: absolute; inset: 0; }
 
-/* Surfaces */
+/* ---------- Surfaces */
 .card { background: var(--surface-1); border-radius: var(--r-md); padding: 18px; }
 .row-group { display: flex; flex-direction: column; gap: 8px; }
 .opt {
@@ -109,9 +113,9 @@ a { color: inherit; text-decoration: none; }
 .segs i::after { content: ''; position: absolute; inset: 0; background: var(--ink); transform: translateX(calc(-100% + var(--p, 0) * 100%)); transition: transform 400ms var(--ease-out); }
 .segs i[data-done] { --p: 1; }
 
-/* Floating tab bar (Opal): three items, the active one sits in a lit circle */
+/* ---------- Floating tab bar (Opal): three items, the active one sits in a lit circle */
 .tabbar {
-  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 6;
+  position: fixed; left: 50%; bottom: calc(20px + var(--safe-bottom)); transform: translateX(-50%); z-index: 6;
   display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 40px;
   background: rgba(28, 28, 30, 0.82);
   -webkit-backdrop-filter: blur(20px) saturate(140%); backdrop-filter: blur(20px) saturate(140%);
@@ -127,12 +131,10 @@ a { color: inherit; text-decoration: none; }
 .tabbar a:active { transform: scale(0.95); }
 .tabbar a.active { color: var(--ink); background: var(--surface-3); }
 @media (prefers-reduced-transparency: reduce) { .tabbar { background: #1C1C1E; -webkit-backdrop-filter: none; backdrop-filter: none; } }
-/* Clearance for the floating tab bar. It goes inside the dock, not below the screen:
-   padding on a min-height screen would push the page past the viewport and let the
-   fixed bar overlap the last action instead of sitting under it. */
-.dock.has-tabs, .has-tabs > .dock, .has-tabs > .home-dock { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+/* Clearance for the floating tab bar lives inside the dock, so the screen never grows past the viewport. */
+.has-tabs > .dock, .has-tabs .dock { padding-bottom: calc(92px + var(--safe-bottom)); }
 @media (min-width: 760px) and (orientation: landscape) {
-  .dock.has-tabs, .has-tabs > .dock, .has-tabs > .home-dock { padding-bottom: calc(var(--pad) + env(safe-area-inset-bottom)); }
+  .has-tabs > .dock, .has-tabs .dock { padding-bottom: calc(var(--pad) + var(--safe-bottom)); }
   .tabbar { bottom: 24px; }
 }
 
@@ -150,6 +152,9 @@ a { color: inherit; text-decoration: none; }
 .hero-copy { text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .hero-copy h1 { max-width: 20ch; }
 .hero-copy .body { max-width: 34ch; }
+
+/* Full-screen flows: a close button in the top bar's row, top-left. Specific enough to beat the button base rule. */
+.shell .btn.flow-close { position: fixed; z-index: 7; top: calc(var(--safe-top) + 12px); left: var(--pad); pointer-events: auto; }
 
 /* Motion preferences */
 @media (prefers-reduced-motion: reduce) {

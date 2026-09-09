@@ -1,35 +1,33 @@
 import './Solved.css';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { randomState } from '@/cube/scramble';
-import { CubeStage } from '@/cube3d/CubeStage';
-import type { CubeHandle } from '@/cube3d/Cube3D';
+import { useStage, cubeHandle, useStageStore } from '@/cube3d/scene/stage';
 import { Button } from '@/ui/Button';
 import { Icon } from '@/ui/Icon';
 import { useShellState } from '@/ui/Shell';
 import { useSession } from '@/store/session';
 import { SOLVED, isSolved } from '@/cube/facelets';
 import { renderCard, shareBlob } from '@/features/share/renderCard';
-import { speak } from '@/features/learn/speech';
+import { speak } from '@/features/play/speech';
 import * as sfx from '@/audio/sounds';
 
 const ease = [0.23, 1, 0.32, 1] as const;
+const SOLVED_VIEW = { top: 'D' as const, front: 'F' as const, yaw: -0.55, pitch: 0.12 };
 
 export default function SolvedPage() {
   const nav = useNavigate();
   const reduce = useReducedMotion();
   const { solved, facelets, setFacelets, clearSession, lastInput, settings, startLearn } = useSession();
   const setShell = useShellState((s) => s.set);
-  const cubeRef = useRef<CubeHandle>(null);
   const [display, setDisplay] = useState<string>(isSolved(facelets) ? SOLVED : facelets);
   const [phase, setPhase] = useState<'settle' | 'bloom' | 'copy'>('settle');
   const [sheet, setSheet] = useState(false);
   const [card, setCard] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const stats = solved ?? { ms: 0, moves: 0, at: Date.now() };
-  const [cubeReady, setCubeReady] = useState(false);
-  const onReady = useCallback(() => setCubeReady(true), []);
+  const cubeReady = useStageStore((st) => st.ready);
 
   // choreography: settle → bloom (glow + iridescence + chime) → copy and actions
   useEffect(() => {
@@ -38,7 +36,7 @@ export default function SolvedPage() {
     const t1 = setTimeout(() => {
       setPhase('bloom');
       setShell({ mode: 'holo' });
-      const c = cubeRef.current?.controller; if (c) { c.bloom(); c.celebrate('#FFF3B0'); }
+      const c = cubeHandle()?.controller; if (c) { c.bloom(); c.celebrate('#FFF3B0'); }
       sfx.solvedChime(); if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
       if (settings.voice) setTimeout(() => speak('You solved it!'), 300);
     }, reduce ? 200 : 700);
@@ -49,7 +47,7 @@ export default function SolvedPage() {
   // turning the cube out of solved dims the memento honestly
   const onMoveDone = useCallback((_m: string, f: string) => {
     setDisplay(f);
-    const c = cubeRef.current?.controller;
+    const c = cubeHandle()?.controller;
     if (c) c.setBloom(isSolved(f) ? 0.25 : 0);
     setShell({ mode: isSolved(f) ? 'holo' : undefined });
   }, [setShell]);
@@ -59,7 +57,7 @@ export default function SolvedPage() {
     setSheet(true);
     const canvas = document.querySelector('.cube3d canvas') as HTMLCanvasElement | null;
     if (canvas) {
-      const c = cubeRef.current?.controller; c?.invalidate();
+      const c = cubeHandle()?.controller; c?.invalidate();
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const blob = await renderCard(canvas, { ms: stats.ms, moves: stats.moves });
       setCard(URL.createObjectURL(blob));
@@ -71,23 +69,23 @@ export default function SolvedPage() {
     await shareBlob(blob, 'cube-solved.png', 'I solved my Rubik’s cube!');
   };
   const copyLink = async () => {
-    const url = `${location.origin}/learn?c=${(solved ? sessionStartFacelets() : facelets)}`;
+    const url = `${location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}/play?c=${solved?.start ?? facelets}`;
     try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* ignore */ }
   };
   const scrambleForMe = () => {
     const f = randomState();
     setFacelets(f, 'paint');
     startLearn(f);
-    nav('/learn');
+    nav('/play');
   };
-  const solveAgain = () => { clearSession(); nav(lastInput === 'camera' ? '/camera' : '/paint'); };
+  const solveAgain = () => { clearSession(); nav(lastInput === 'camera' ? '/scan' : '/fix'); };
 
   const mm = Math.floor(stats.ms / 60000), ss = Math.floor((stats.ms % 60000) / 1000);
+  const stageRef = useStage({ facelets: display, layerTurns: true, interactive: true, orientation: SOLVED_VIEW, onMoveDone, fill: 0.74 });
 
   return (
     <main className="screen" aria-label="Solved">
-      <div className="stage">
-        <CubeStage facelets={display} layerTurns interactive orientation={{ top: 'D', front: 'F', yaw: -0.55, pitch: 0.12 }} onMoveDone={onMoveDone} cubeRef={cubeRef} onReady={onReady} />
+      <div className="stage" ref={stageRef}>
       </div>
       <div className="dock">
         <AnimatePresence>
@@ -141,8 +139,4 @@ function Reveal({ className, delay, children }: { className?: string; delay: num
   const [on, setOn] = useState(false);
   useEffect(() => { const id = requestAnimationFrame(() => requestAnimationFrame(() => setOn(true))); return () => cancelAnimationFrame(id); }, []);
   return <div className={`reveal ${className ?? ''}`} data-in={on ? '' : undefined} style={{ transitionDelay: `${delay}ms` }}>{children}</div>;
-}
-
-function sessionStartFacelets(): string {
-  try { const s = JSON.parse(localStorage.getItem('cube.session.v1') ?? '{}'); return s?.state?.learn?.start ?? SOLVED; } catch { return SOLVED; }
 }

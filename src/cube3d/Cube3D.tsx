@@ -21,8 +21,9 @@ export interface CubeHandle {
 
 export type Cube3DProps = CubeStageProps & {
   orientation?: Orientation;
+  /** Where on the canvas the cube sits (CSS px, canvas-relative). Null fades the object out. */
+  frame?: { x: number; y: number; w: number; h: number } | null;
   fill?: number;
-  targetY?: number;
   onMoveDone?: (move: Move, facelets: string, meta: { replay: boolean; user: boolean }) => void;
   onQueueIdle?: () => void;
   rippleOnTap?: boolean;
@@ -42,7 +43,7 @@ const KEY_ROTATE: Record<string, [Vector3, number]> = {
 };
 
 const Cube3D = forwardRef<CubeHandle, Cube3DProps>(function Cube3D(
-  { facelets, interactive = true, layerTurns = false, highlight = null, onStickerTap, orientation = HERO, fill, targetY, onMoveDone, onQueueIdle, rippleOnTap = true, cue = null, gate = null, onRejected, onReady },
+  { facelets, interactive = true, layerTurns = false, highlight = null, onStickerTap, orientation = HERO, frame, fill, onMoveDone, onQueueIdle, rippleOnTap = true, cue = null, gate = null, onRejected, onReady },
   ref,
 ) {
   const ctrl = useMemo(() => new CubeController(facelets), []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -54,6 +55,7 @@ const Cube3D = forwardRef<CubeHandle, Cube3DProps>(function Cube3D(
 
   useEffect(() => { ctrl.reduced = reduced; ctrl.interactive = interactive; ctrl.layerTurns = layerTurns; }, [ctrl, reduced, interactive, layerTurns]);
   useEffect(() => { ctrl.setFacelets(facelets); }, [ctrl, facelets]);
+  useEffect(() => { if (frame !== undefined) ctrl.setFrame(frame, fill); }, [ctrl, frame, fill]);
   useEffect(() => { ctrl.highlight = highlight; ctrl.invalidate(); }, [ctrl, highlight]);
   useEffect(() => { ctrl.cue = cue; ctrl.cueUp = (orientation && !(orientation instanceof Quaternion) ? orientation.top : 'U') as 'U' | 'D'; ctrl.invalidate(); }, [ctrl, cue, orientation]);
   useEffect(() => { ctrl.gate = gate; ctrl.onRejected = onRejected ?? null; }, [ctrl, gate, onRejected]);
@@ -88,7 +90,7 @@ const Cube3D = forwardRef<CubeHandle, Cube3DProps>(function Cube3D(
   }), [ctrl]);
 
   useEffect(() => () => ctrl.dispose(), [ctrl]);
-  useEffect(() => { if (import.meta.env.DEV) { (window as unknown as { __cube?: CubeController }).__cube = ctrl; import('three').then((T) => { (window as unknown as { __THREE?: unknown }).__THREE = T; }); } }, [ctrl]);
+  useEffect(() => { if (import.meta.env.DEV || localStorage.getItem('cube.debug') === '1') { (window as unknown as { __cube?: CubeController }).__cube = ctrl; import('three').then((T) => { (window as unknown as { __THREE?: unknown }).__THREE = T; }); } }, [ctrl]);
 
   const onKey = (e: React.KeyboardEvent) => {
     if (!interactive) return;
@@ -114,13 +116,13 @@ const Cube3D = forwardRef<CubeHandle, Cube3DProps>(function Cube3D(
         frameloop="demand"
         dpr={[1, 1.75]}
         gl={{ antialias: true, alpha: true, stencil: false, powerPreference: 'high-performance' }}
-        camera={{ fov: 32, near: 1, far: 200, position: [0, 4, 12] }}
+        camera={{ fov: 32, near: 1, far: 200, position: [0, 4, 12], manual: true }}
         onCreated={({ gl }) => { ctrl.canvas = gl.domElement; setCanvasEl(gl.domElement); }}
         style={{ touchAction: 'none' }}
       >
         <SceneEnvironment />
         <Lights />
-        <CameraFit fill={fill} targetY={targetY} />
+        <CameraFit ctrl={ctrl} />
         <CubeRig ctrl={ctrl}><MoveCue ctrl={ctrl} /><Sparkles ctrl={ctrl} /></CubeRig>
         <GroundShadow ctrl={ctrl} />
       </Canvas>

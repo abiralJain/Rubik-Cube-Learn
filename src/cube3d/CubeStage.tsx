@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, type RefObject } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, type RefObject } from 'react';
 import type { Cube3DProps, CubeHandle } from './Cube3D';
 
 const Cube3D = lazy(() => import('./Cube3D'));
@@ -18,6 +18,8 @@ export type CubeStageProps = {
 export function CubeStage({ cubeRef, defer, poster, ...props }: Cube3DProps & { cubeRef?: RefObject<CubeHandle | null>; defer?: boolean; poster?: string }) {
   const [live, setLive] = useState(!defer);
   const [shown, setShown] = useState(false);
+  const onReadyProp = props.onReady;
+  const onReady = useCallback(() => { onReadyProp?.(); setTimeout(() => setShown(true), 420); }, [onReadyProp]);
   useEffect(() => {
     if (live) return;
     const go = () => setLive(true);
@@ -31,7 +33,7 @@ export function CubeStage({ cubeRef, defer, poster, ...props }: Cube3DProps & { 
       {poster && !shown && <img className="cube-poster-img" src={`${poster}-540.webp`} srcSet={`${poster}-540.webp 540w, ${poster}-810.webp 810w, ${poster}-1080.webp 1080w`} sizes="(max-width: 599px) 100vw, 60vw" alt="" aria-hidden decoding="async" fetchPriority="high" />}
       {live && (
         <Suspense fallback={poster ? null : <div className="cube-poster" aria-hidden />}>
-          <Cube3D ref={cubeRef} {...props} onReady={() => { props.onReady?.(); setTimeout(() => setShown(true), 420); }} />
+          <Cube3D ref={cubeRef} {...props} onReady={onReady} />
         </Suspense>
       )}
     </>

@@ -1,0 +1,6 @@
+/* The cube's layer: full viewport, under the content, above the room light. */
+.stage-layer { position: fixed; inset: 0; z-index: 1; opacity: 0; transition: opacity 360ms var(--ease-out); pointer-events: none; }
+.stage-layer[data-shown] { opacity: 1; pointer-events: auto; }
+.stage-layer .cube3d { position: absolute; inset: 0; }
+/* the floor reflection follows the frame, drawn by the controller's frame via CSS vars set on the layer */
+.stage-layer .cube3d::after { display: none; }

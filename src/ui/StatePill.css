@@ -1,0 +1,37 @@
+/* The morphing state pill: a dark capsule whose glyph and width change with what the app is doing. */
+.state-pill {
+  appearance: none; border: 0; cursor: pointer; user-select: none; -webkit-user-select: none;
+  display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 20px 0 14px; border-radius: 26px;
+  background: rgba(28, 28, 30, 0.86); color: var(--ink);
+  -webkit-backdrop-filter: blur(20px) saturate(140%); backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.07) inset, 0 12px 40px -14px rgba(0,0,0,0.9);
+  font-size: 15px; font-weight: 600; letter-spacing: -0.005em; white-space: nowrap;
+  touch-action: manipulation; overflow: hidden;
+}
+.state-pill:active { transform: scale(0.97); }
+.state-pill[data-state="turn"], .state-pill[data-state="speaking"] { padding-left: 14px; }
+.pill-glyph { position: relative; width: 24px; height: 24px; display: grid; place-items: center; flex: 0 0 auto; }
+.pill-glyph-in { position: absolute; inset: 0; display: grid; place-items: center; }
+.pill-glyph svg { width: 22px; height: 22px; }
+.pill-label { line-height: 1; }
+
+/* speaking: four bars */
+.wave { display: flex; align-items: center; gap: 3px; height: 18px; }
+.wave b { width: 3px; border-radius: 2px; background: var(--pill-tint, var(--ink)); height: 6px; animation: wave 900ms var(--ease-in-out) infinite alternate; }
+.wave b:nth-child(1) { animation-delay: 0ms; } .wave b:nth-child(2) { animation-delay: 140ms; } .wave b:nth-child(3) { animation-delay: 260ms; } .wave b:nth-child(4) { animation-delay: 80ms; }
+@keyframes wave { from { height: 5px; } to { height: 18px; } }
+
+/* your turn: a draining ring */
+.ring { transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 2.25; stroke-linecap: round; }
+.ring .track { stroke: rgba(255,255,255,0.18); }
+.ring .fill { stroke: var(--pill-tint, var(--ink)); transition: stroke-dashoffset 120ms linear; }
+
+/* checking: three dots */
+.dots { display: flex; gap: 4px; }
+.dots b { width: 5px; height: 5px; border-radius: 50%; background: var(--ink); animation: dot 1s var(--ease-in-out) infinite; }
+.dots b:nth-child(2) { animation-delay: 160ms; } .dots b:nth-child(3) { animation-delay: 320ms; }
+@keyframes dot { 0%, 100% { opacity: 0.3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+
+@media (prefers-reduced-motion: reduce) { .wave b, .dots b { animation: none; } .wave b { height: 12px; } }
+@media (prefers-reduced-transparency: reduce) { .state-pill { background: #1C1C1E; -webkit-backdrop-filter: none; backdrop-filter: none; } }

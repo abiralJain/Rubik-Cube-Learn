@@ -2,7 +2,8 @@ import { Color, Euler, Quaternion, Vector3, type Mesh, type MeshBasicMaterial, t
 import type { Move, BaseMove } from '@/cube/notation';
 import { makeMove } from '@/cube/notation';
 import { applyMove } from '@/cube/facelets';
-import { COLORS, GLASS_TINT, HIGHLIGHT_DAMP, LAYER_LIFT, LOW_GPU, MOMENTUM_DECAY, MOMENTUM_STOP, SPRING, STICKER_MAT } from './constants';
+import { APPARENT_RADIUS, CAMERA_ELEVATION, CAMERA_FOV, COLORS, FILL, GLASS_TINT, HIGHLIGHT_DAMP, LAYER_LIFT, LOW_GPU, MAX_RADIUS_PX, MOMENTUM_DECAY, MOMENTUM_STOP, SPRING, STICKER_MAT } from './constants';
+import { MathUtils } from 'three';
 import { Spring, damp } from './spring';
 import { STICKERS, slotById } from './placements';
 import { moveDef } from './moves';
@@ -87,6 +88,15 @@ export class CubeController {
   sparkles: Array<{ p: Vector3; v: Vector3; born: number; life: number }> = [];
   sparkleColor = new Color('#FFD54A');
   canvas: HTMLCanvasElement | null = null;
+  /* ---------- the frame: where on the canvas the cube should sit (CSS px). Damped, so it glides between screens ---------- */
+  viewport = { w: 0, h: 0 };
+  frame = { x: 0, y: 0, w: 0, h: 0 };
+  frameTarget = { x: 0, y: 0, w: 0, h: 0 };
+  fill = FILL; fillTarget = FILL;
+  targetY = -0.3;
+  private frameSet = false;
+  /** 0..1 presence: fades the object out when no screen owns it */
+  presence = 1; presenceTarget = 1;
   bloomTarget = 0;
   bloomValue = 0;
   bloomT = -1;
@@ -329,11 +339,57 @@ export class CubeController {
     }
   }
 
+  /* ---------- camera fit ---------- */
+  setViewport(w: number, h: number) { this.viewport = { w, h }; if (!this.frameSet) { this.frameTarget = { x: 0, y: 0, w, h }; this.frame = { ...this.frameTarget }; } this.fitCamera(); this.invalidate(); }
+  setFrame(f: { x: number; y: number; w: number; h: number } | null, fill = FILL, animate = true) {
+    if (!f) { this.presenceTarget = 0; this.invalidate(); return; }
+    this.presenceTarget = 1;
+    this.fillTarget = fill;
+    this.frameTarget = { ...f };
+    if (!this.frameSet || !animate || this.reduced) { this.frame = { ...f }; this.fill = fill; this.frameSet = true; this.fitCamera(); }
+    this.frameSet = true;
+    this.invalidate();
+  }
+  /** Distance from the frame's short side, projection shifted so the cube centres on the frame. */
+  fitCamera() {
+    const cam = this.camera; const { w: W, h: H } = this.viewport;
+    if (!cam || !W || !H) return;
+    const f = this.frame;
+    const vHalf = Math.tan(MathUtils.degToRad(CAMERA_FOV) / 2);
+    const short = Math.max(40, Math.min(f.w, f.h));
+    const rPx = Math.min((this.fill * short) / 2, MAX_RADIUS_PX);
+    const d = (APPARENT_RADIUS * (H / 2)) / (vHalf * rPx);
+    const phi = MathUtils.degToRad(CAMERA_ELEVATION);
+    cam.fov = CAMERA_FOV; cam.aspect = W / H; cam.near = 1; cam.far = 200;
+    cam.position.set(0, d * Math.sin(phi) + this.targetY, d * Math.cos(phi));
+    cam.lookAt(0, this.targetY, 0);
+    const cx = f.x + f.w / 2, cy = f.y + f.h / 2;
+    cam.setViewOffset(W, H, W / 2 - cx, H / 2 - cy, W, H);
+    cam.updateProjectionMatrix();
+  }
+  private stepFrame(dt: number): boolean {
+    let moving = false;
+    const k = 11;
+    const near = (a: number, b: number, eps: number) => Math.abs(a - b) < eps;
+    if (!near(this.frame.x, this.frameTarget.x, 0.25) || !near(this.frame.y, this.frameTarget.y, 0.25) || !near(this.frame.w, this.frameTarget.w, 0.25) || !near(this.frame.h, this.frameTarget.h, 0.25) || !near(this.fill, this.fillTarget, 0.001)) {
+      this.frame.x = damp(this.frame.x, this.frameTarget.x, k, dt); this.frame.y = damp(this.frame.y, this.frameTarget.y, k, dt);
+      this.frame.w = damp(this.frame.w, this.frameTarget.w, k, dt); this.frame.h = damp(this.frame.h, this.frameTarget.h, k, dt);
+      this.fill = damp(this.fill, this.fillTarget, k, dt);
+      if (near(this.frame.x, this.frameTarget.x, 0.25) && near(this.frame.y, this.frameTarget.y, 0.25) && near(this.frame.w, this.frameTarget.w, 0.25) && near(this.frame.h, this.frameTarget.h, 0.25)) { this.frame = { ...this.frameTarget }; this.fill = this.fillTarget; }
+      this.fitCamera();
+      moving = true;
+    }
+    if (!near(this.presence, this.presenceTarget, 0.004)) { this.presence = damp(this.presence, this.presenceTarget, 8, dt); moving = true; }
+    else this.presence = this.presenceTarget;
+    return moving;
+  }
+
   /* ---------- master loop ---------- */
   update(rawDt: number) {
     const dt = Math.min(rawDt, 0.05);
     this.t += dt;
     let moving = false;
+    if (this.stepFrame(dt)) moving = true;
 
     // idle drift & float
     if (!this.reduced && !this.paused && !this.dragging && this.omega.lengthSq() < 1e-6) {

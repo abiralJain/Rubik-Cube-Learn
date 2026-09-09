@@ -1,0 +1,17 @@
+/* Solve (home): stones, one sentence, one pill. The cube above is the shared stage. */
+.solve .dock { gap: 18px; align-items: center; }
+.solve .stones { margin-bottom: 2px; }
+.solve .hero-copy h1 { font-size: 28px; line-height: 34px; letter-spacing: -0.015em; max-width: 18ch; }
+.solve .hero-copy .body { max-width: 36ch; }
+.solve .btn-primary { max-width: 420px; }
+.solve .links { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; }
+
+/* staged entrance, once, off the main thread */
+.enter { animation: enter 320ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 50ms); }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .enter { animation: none; } }
+
+@media (orientation: portrait) and (max-height: 780px) {
+  .solve .hero-copy .body { display: none; }
+  .solve .dock { gap: 14px; }
+}

@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { Face, Facelet } from '@/cube/facelets';
+import type { StageId } from '@/cube/lbl';
 
-export type Face = 'U' | 'R' | 'F' | 'D' | 'L' | 'B';
-export type Facelet = Face | '.';
+export type { Face, Facelet };
 
 /** 54 facelets in cubejs order U R F D L B, centres pre-filled and locked. */
 export const EMPTY_FACELETS = (['U', 'R', 'F', 'D', 'L', 'B'] as Face[])
@@ -10,14 +11,31 @@ export const EMPTY_FACELETS = (['U', 'R', 'F', 'D', 'L', 'B'] as Face[])
   .join('');
 
 export interface PaintEdit { index: number; from: Facelet; to: Facelet; auto?: boolean }
+export interface SolveRecord { at: number; ms: number; moves: number; start: string }
+
+export interface Settings {
+  sound: boolean;
+  voice: boolean;
+  /** Seconds the autopilot waits after saying a turn before it plays it on screen. */
+  pace: number;
+  /** Preferred speech voice, by `voiceURI`; null = the ranked default. */
+  voiceURI: string | null;
+  seenPaintHint: boolean;
+  seenHold: boolean;
+}
 
 interface Session {
   facelets: string;
   paintHistory: PaintEdit[];
   lastInput: 'camera' | 'paint' | null;
+  /** The solve in progress: the start state, the current card, timing. */
   learn: { start: string; card: number; startedAt: number; elapsedMs: number } | null;
-  solved: { ms: number; moves: number; at: number } | null;
-  settings: { sound: boolean; voice: boolean; seenPaintHint: boolean; seenLearnHint: boolean };
+  /** The last finished solve (drives the Solved screen). */
+  solved: { ms: number; moves: number; at: number; start: string } | null;
+  /** Stage stones, keyed by stage, valued by unlock time. */
+  unlocked: Partial<Record<StageId, number>>;
+  history: SolveRecord[];
+  settings: Settings;
 
   setFacelets: (f: string, input?: 'camera' | 'paint') => void;
   paint: (index: number, to: Facelet, auto?: boolean) => void;
@@ -25,10 +43,15 @@ interface Session {
   resetPaint: () => void;
   startLearn: (start: string) => void;
   setLearnCard: (card: number, facelets: string, elapsedMs: number) => void;
+  /** Re-plan from a freshly read cube mid-solve: same timer, new start. */
+  replan: (facelets: string, elapsedMs: number) => void;
   finishLearn: (ms: number, moves: number, facelets: string) => void;
+  unlock: (stage: StageId) => void;
   clearSession: () => void;
-  setSetting: <K extends keyof Session['settings']>(k: K, v: Session['settings'][K]) => void;
+  setSetting: <K extends keyof Settings>(k: K, v: Settings[K]) => void;
 }
+
+const DEFAULT_SETTINGS: Settings = { sound: true, voice: true, pace: 4, voiceURI: null, seenPaintHint: false, seenHold: false };
 
 export const useSession = create<Session>()(
   persist(
@@ -38,9 +61,11 @@ export const useSession = create<Session>()(
       lastInput: null,
       learn: null,
       solved: null,
-      settings: { sound: true, voice: true, seenPaintHint: false, seenLearnHint: false },
+      unlocked: {},
+      history: [],
+      settings: DEFAULT_SETTINGS,
 
-      setFacelets: (facelets, input) => set({ facelets, learn: null, lastInput: input ?? get().lastInput }),
+      setFacelets: (facelets, input) => set({ facelets, learn: null, paintHistory: [], lastInput: input ?? get().lastInput }),
       paint: (index, to, auto) => {
         const { facelets, paintHistory } = get();
         const from = facelets[index] as Facelet;
@@ -55,7 +80,7 @@ export const useSession = create<Session>()(
       undoPaint: () => {
         const { facelets, paintHistory } = get();
         if (!paintHistory.length) return;
-        let hist = paintHistory.slice();
+        const hist = paintHistory.slice();
         let f = facelets;
         // an automatic fill is undone together with the paint that triggered it
         const pops = hist[hist.length - 1].auto ? 2 : 1;
@@ -66,16 +91,32 @@ export const useSession = create<Session>()(
         set({ facelets: f, paintHistory: hist });
       },
       resetPaint: () => set({ facelets: EMPTY_FACELETS, paintHistory: [], learn: null }),
-      startLearn: (start) => set({ learn: { start, card: 0, startedAt: Date.now(), elapsedMs: 0 } }),
+      startLearn: (start) => set({ learn: { start, card: 0, startedAt: Date.now(), elapsedMs: 0 }, facelets: start }),
       setLearnCard: (card, facelets, elapsedMs) => {
         const l = get().learn;
         if (l) set({ learn: { ...l, card, elapsedMs }, facelets });
       },
-      finishLearn: (ms, moves, facelets) => set({ solved: { ms, moves, at: Date.now() }, learn: null, facelets }),
+      replan: (facelets, elapsedMs) => {
+        const l = get().learn;
+        set({ facelets, learn: { start: facelets, card: 0, startedAt: l?.startedAt ?? Date.now(), elapsedMs } });
+      },
+      finishLearn: (ms, moves, facelets) => {
+        const l = get().learn;
+        const rec: SolveRecord = { at: Date.now(), ms, moves, start: l?.start ?? facelets };
+        set({ solved: { ms, moves, at: rec.at, start: rec.start }, learn: null, facelets, history: [...get().history, rec].slice(-50), unlocked: { ...get().unlocked, 'position-edges': get().unlocked['position-edges'] ?? rec.at } });
+      },
+      unlock: (stage) => { if (!get().unlocked[stage]) set({ unlocked: { ...get().unlocked, [stage]: Date.now() } }); },
       clearSession: () => set({ facelets: EMPTY_FACELETS, paintHistory: [], learn: null, solved: null }),
       setSetting: (k, v) => set({ settings: { ...get().settings, [k]: v } }),
     }),
-    { name: 'cube.session.v1', version: 1 },
+    {
+      name: 'cube.session.v1',
+      version: 2,
+      migrate: (persisted) => {
+        const p = (persisted ?? {}) as Partial<Session>;
+        return { ...p, unlocked: p.unlocked ?? {}, history: p.history ?? [], settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) } } as Session;
+      },
+    },
   ),
 );
 
