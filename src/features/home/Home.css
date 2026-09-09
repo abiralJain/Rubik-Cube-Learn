@@ -23,6 +23,19 @@
 @media (min-width: 900px) and (orientation: landscape) { .home { grid-template-columns: 60fr 40fr; } }
 @media (min-width: 1600px) and (orientation: landscape) { .home { grid-template-columns: 65fr 35fr; } .home-dock { max-width: 520px; } }
 
+/* Short phones: Opal keeps a screen to one view, so give the stage less height
+   and tighten the dock rather than letting the page scroll under the tab bar. */
+@media (orientation: portrait) and (max-height: 900px) {
+  .home { grid-template-rows: minmax(26vh, 1fr) auto; }
+  .home-dock { gap: 12px; }
+  .home-dock .card { padding: 14px 16px 16px; }
+  .home-dock .stats { gap: 14px; }
+}
+@media (orientation: portrait) and (max-height: 780px) {
+  .home { grid-template-rows: minmax(22vh, 1fr) auto; }
+  .home-dock .hero-copy .body { display: none; }
+}
+
 /* staged entrance, once, off the main thread */
 .enter { animation: enter 320ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 50ms); }
 @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

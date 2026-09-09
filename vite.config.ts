@@ -4,8 +4,13 @@ import { fileURLToPath } from 'node:url';
 import { copyFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-// GitHub Pages serves this repo under /Rubik-Cube-Learn/. Override with BASE_PATH for any other host.
-const base = process.env.BASE_PATH ?? '/Rubik-Cube-Learn/';
+/**
+ * GitHub Pages serves this repo under /Rubik-Cube-Learn/, so builds (and `vite preview`,
+ * which serves those built files) need that base. The dev server stays at the root so
+ * localhost:5173, the Playwright suite and the screenshot scripts keep working unchanged.
+ * Override either with BASE_PATH.
+ */
+const baseFor = (dev: boolean) => process.env.BASE_PATH ?? (dev ? '/' : '/Rubik-Cube-Learn/');
 
 /**
  * GitHub Pages has no rewrite rules, so a hard refresh on /learn would 404.
@@ -21,8 +26,8 @@ const spaFallback = {
   },
 };
 
-export default defineConfig({
-  base,
+export default defineConfig(({ command, isPreview }) => ({
+  base: baseFor(command === 'serve' && !isPreview),
   plugins: [react(), spaFallback],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   worker: { format: 'es' },
@@ -36,4 +41,4 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     setupFiles: ['./src/test.setup.ts'],
   },
-} as Parameters<typeof defineConfig>[0] & { test: unknown });
+}) as Parameters<typeof defineConfig>[0]);

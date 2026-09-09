@@ -127,8 +127,14 @@ a { color: inherit; text-decoration: none; }
 .tabbar a:active { transform: scale(0.95); }
 .tabbar a.active { color: var(--ink); background: var(--surface-3); }
 @media (prefers-reduced-transparency: reduce) { .tabbar { background: #1C1C1E; -webkit-backdrop-filter: none; backdrop-filter: none; } }
-.has-tabs { padding-bottom: 104px; }
-@media (min-width: 760px) and (orientation: landscape) { .has-tabs { padding-bottom: 0; } .tabbar { bottom: 24px; } }
+/* Clearance for the floating tab bar. It goes inside the dock, not below the screen:
+   padding on a min-height screen would push the page past the viewport and let the
+   fixed bar overlap the last action instead of sitting under it. */
+.dock.has-tabs, .has-tabs > .dock, .has-tabs > .home-dock { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+@media (min-width: 760px) and (orientation: landscape) {
+  .dock.has-tabs, .has-tabs > .dock, .has-tabs > .home-dock { padding-bottom: calc(var(--pad) + env(safe-area-inset-bottom)); }
+  .tabbar { bottom: 24px; }
+}
 
 /* Outlined stat pills (Opal: Sleep / Focus / Rest) */
 .stats { display: flex; gap: 18px; justify-content: center; }
