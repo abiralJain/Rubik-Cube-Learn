@@ -2,7 +2,7 @@ import './Play.css';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { useStage, cubeHandle } from '@/cube3d/scene/stage';
+import { useStage, cubeHandle, useStageStore } from '@/cube3d/scene/stage';
 import { Button } from '@/ui/Button';
 import { Icon } from '@/ui/Icon';
 import { StatePill, type PillState } from '@/ui/StatePill';
@@ -71,7 +71,7 @@ export default function PlayPage() {
   const [auto, setAutoState] = useState<Auto>(initial);
   useEffect(() => {
     let last = performance.now();
-    const id = setInterval(() => { const now = performance.now(); if (!document.hidden && autoRef.current.phase !== 'paused') setElapsed((e) => e + (now - last)); last = now; }, 1000);
+    const id = setInterval(() => { const now = performance.now(); const dt = Math.max(0, now - last); last = now; if (!document.hidden && autoRef.current.phase !== 'paused') setElapsed((e) => Math.max(0, e) + dt); }, 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -125,8 +125,16 @@ export default function PlayPage() {
         case 'sweep': if (c) { c.cueLoop = true; c.startSweep(); } break;
         case 'play': {
           if (c) c.cueLoop = false;
-          if (card?.type === 'move') { busy.current = true; void cubeHandle()?.play(card.move).then(() => { busy.current = false; dispatch({ type: 'played' }); }); }
-          else dispatch({ type: 'played' });
+          if (card?.type !== 'move') { dispatch({ type: 'played' }); break; }
+          const idx = cardIndex; const move = card.move;
+          const go = () => {
+            if (autoRef.current.card !== idx) return;
+            const h = cubeHandle();
+            if (!h) { setTimeout(go, 150); return; } // the cube is still booting
+            busy.current = true;
+            void h.play(move).then(() => { busy.current = false; dispatch({ type: 'played' }); });
+          };
+          go();
           break;
         }
         case 'advance': advance(false); break;
@@ -138,11 +146,12 @@ export default function PlayPage() {
     };
   }, [card, cardIndex, settings.voice, sentenceFor, dispatch, advance]);
 
-  // a new card starts the cycle; a milestone or the Why sheet holds it
+  // a new card starts the cycle once the cube is on screen; a milestone or the Why sheet holds it
+  const cubeReady = useStageStore((st) => st.ready);
   useEffect(() => {
-    if (!card || card.type === 'done') return;
+    if (!card || card.type === 'done' || !cubeReady) return;
     dispatch({ type: 'card', index: cardIndex });
-  }, [cardIndex, card?.type, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cardIndex, card?.type, cubeReady, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (milestone || why) { if (autoRef.current.phase !== 'paused') dispatch({ type: 'pause' }); pausedByUs.current = true; }
     else if (pausedByUs.current) { pausedByUs.current = false; dispatch({ type: 'resume' }); }

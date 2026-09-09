@@ -1,6 +1,6 @@
 /* Learn: a list of chapters, then a reading screen. */
-.learn { display: flex; flex-direction: column; gap: 18px; min-height: calc(100dvh - var(--topbar-h) - var(--safe-top)); padding-top: 4px; pointer-events: auto !important; }
-.chapters { list-style: none; margin: 0 auto; padding: 0 var(--pad) calc(96px + var(--safe-bottom)); width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 8px; }
+.learn { display: flex; flex-direction: column; gap: 12px; min-height: calc(100dvh - var(--topbar-h) - var(--safe-top)); padding-top: 4px; pointer-events: auto !important; }
+.chapters { list-style: none; margin: 0 auto; padding: 0 var(--pad) calc(88px + var(--safe-bottom)); width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 8px; }
 .chapter-row { width: 100%; min-height: 64px; padding: 8px 16px 8px 10px; gap: 12px; }
 .chapter-row:disabled { cursor: default; color: var(--ink-3); }
 .chapter-row img { width: 44px; height: 44px; object-fit: contain; transform: scale(1.35); filter: grayscale(1) brightness(0.5); opacity: 0.45; mix-blend-mode: screen; flex: 0 0 auto; }

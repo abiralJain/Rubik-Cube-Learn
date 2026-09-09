@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { NeutralToneMapping, type Mesh, type PerspectiveCamera } from 'three';
 import { CUBE_HALF } from '../constants';
-import { bodyGeometry, bodyMaterial, coreGeometry, environmentFor, makeCoreMaterial, makeStickerMaterial, shadowMaterial, stickerGeometry, COLORS_FROM } from '../geometry';
+import { bodyGeometryFor, bodyMaterial, environmentFor, makeStickerMaterial, reflectionTexture, shadowMaterial, stickerGeometry, COLORS_FROM } from '../geometry';
+import { AdditiveBlending, MeshBasicMaterial, Vector3 } from 'three';
 import { SLOTS, STICKERS } from '../placements';
 import type { CubeController } from '../controller';
 
@@ -10,10 +11,10 @@ export function Lights() {
   return (
     <>
       {/* the environment map does most of the lighting; these only shape the diffuse falloff */}
-      <hemisphereLight args={['#FFFFFF', '#1A1620', 0.08]} />
-      <directionalLight position={[4, 7, 5]} color="#FFFFFF" intensity={0.6} />
-      <directionalLight position={[-5, 2, 3]} color="#F2F4F8" intensity={0.18} />
-      <directionalLight position={[-2, 4, -7]} color="#FFFFFF" intensity={0.4} />
+      <hemisphereLight args={['#FFFFFF', '#141218', 0.14]} />
+      <directionalLight position={[-4, 7, 5]} color="#FFFFFF" intensity={1.15} />
+      <directionalLight position={[6, 2, 2]} color="#EEF2FF" intensity={0.35} />
+      <directionalLight position={[-2, 4, -7]} color="#FFFFFF" intensity={0.5} />
     </>
   );
 }
@@ -22,9 +23,7 @@ export function SceneEnvironment() {
   const { gl, scene } = useThree();
   useEffect(() => {
     gl.toneMapping = NeutralToneMapping;
-    gl.toneMappingExposure = 1.1;
-    // the glass crowns refract the scene; render that pass at half resolution
-    (gl as unknown as { transmissionResolutionScale?: number }).transmissionResolutionScale = 0.5;
+    gl.toneMappingExposure = 1.12;
     const t0 = performance.now();
     scene.environment = environmentFor(gl);
     if (import.meta.env.DEV) console.info(`[cube] environment ${(performance.now() - t0).toFixed(0)}ms`);
@@ -46,17 +45,40 @@ export function CameraFit({ ctrl }: { ctrl: CubeController }) {
 
 export function GroundShadow({ ctrl }: { ctrl: CubeController }) {
   const ref = useRef<Mesh>(null);
+  const pool = useRef<Mesh>(null);
   const mat = useMemo(() => shadowMaterial(), []);
+  const poolMat = useMemo(() => new MeshBasicMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending, opacity: 0.5 }), []);
+  const lastKey = useRef('');
+  const tmp = useMemo(() => new Vector3(), []);
   useFrame(() => {
     const m = ref.current; if (!m) return;
     mat.opacity = 0.9 - ctrl.floatY * 3;
     const s = 1 + ctrl.floatY * 0.6;
     m.scale.set(s, s, 1);
+    // the pool takes the colours of whatever stickers face the floor right now
+    const low: Array<{ x: number; hex: string }> = [];
+    for (let i = 0; i < 54; i++) {
+      const st = STICKERS[i];
+      const n = tmp.copy(st.normal).applyQuaternion(ctrl.qOrientation);
+      if (n.z < 0.25 || Math.abs(n.y) > 0.6) continue; // a side facing the viewer
+      const pos = st.position.clone().applyQuaternion(ctrl.qOrientation);
+      if (pos.y < -0.6) low.push({ x: pos.x, hex: ctrl.baseColor[i].getHexString() }); // its bottom row
+    }
+    low.sort((a, b) => a.x - b.x);
+    const down = low.map((l) => l.hex);
+    const key = down.join('');
+    if (key !== lastKey.current) { lastKey.current = key; poolMat.map?.dispose(); poolMat.map = reflectionTexture(down.length ? down.map((h) => '#' + h) : ['#444444']); poolMat.needsUpdate = true; }
+    if (pool.current) pool.current.scale.set(s * 1.1, s, 1);
   });
   return (
-    <mesh ref={ref} rotation-x={-Math.PI / 2} position={[0, -(CUBE_HALF + 1.35), 0.2]} material={mat}>
-      <planeGeometry args={[6.4, 6.4]} />
-    </mesh>
+    <>
+      <mesh ref={pool} rotation-x={-Math.PI / 2} position={[0, -(CUBE_HALF + 1.3), 0.3]} material={poolMat} renderOrder={-1}>
+        <planeGeometry args={[11, 5.5]} />
+      </mesh>
+      <mesh ref={ref} rotation-x={-Math.PI / 2} position={[0, -(CUBE_HALF + 1.29), 0.2]} material={mat}>
+        <planeGeometry args={[6.4, 6.4]} />
+      </mesh>
+    </>
   );
 }
 
@@ -65,7 +87,6 @@ export function CubeRig({ ctrl, children }: { ctrl: CubeController; children?: R
   const group = useRef<import('three').Group>(null);
   const { camera, invalidate, gl } = useThree();
   const materials = useMemo(() => STICKERS.map((p) => makeStickerMaterial(COLORS_FROM(ctrl.displayFacelets[p.index]))), [ctrl]);
-  const cores = useMemo(() => STICKERS.map((p) => makeCoreMaterial(COLORS_FROM(ctrl.displayFacelets[p.index]))), [ctrl]);
 
   const { scene } = useThree();
   useEffect(() => {
@@ -106,7 +127,7 @@ export function CubeRig({ ctrl, children }: { ctrl: CubeController; children?: R
   return (
     <group ref={group}>
       {SLOTS.map((s) => (
-        <mesh key={s.id} geometry={bodyGeometry} material={bodyMaterial} position={s.rest} ref={(m) => { if (m) ctrl.bodies.set(s.id, m); }} />
+        <mesh key={s.id} geometry={bodyGeometryFor(s.pos)} material={bodyMaterial} position={s.rest} ref={(m) => { if (m) ctrl.bodies.set(s.id, m); }} />
       ))}
       {STICKERS.map((p) => (
         <mesh
@@ -117,9 +138,7 @@ export function CubeRig({ ctrl, children }: { ctrl: CubeController; children?: R
           quaternion={p.quaternion}
           renderOrder={2}
           ref={(m) => { if (m) { m.userData.index = p.index; ctrl.stickers[p.index] = m; } }}
-        >
-          <mesh geometry={coreGeometry} material={cores[p.index]} renderOrder={1} raycast={() => null} />
-        </mesh>
+        />
       ))}
       {children}
     </group>

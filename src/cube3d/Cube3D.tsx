@@ -115,7 +115,7 @@ const Cube3D = forwardRef<CubeHandle, Cube3DProps>(function Cube3D(
       {!ready && <div className="cube-poster" aria-hidden />}
       <Canvas
         frameloop="demand"
-        dpr={[1, 1.75]}
+        dpr={ctrl.fast ? 0.5 : [1, 1.75]}
         gl={{ antialias: true, alpha: true, stencil: false, powerPreference: 'high-performance' }}
         camera={{ fov: 32, near: 1, far: 200, position: [0, 4, 12], manual: true }}
         onCreated={({ gl }) => { ctrl.canvas = gl.domElement; setCanvasEl(gl.domElement); }}

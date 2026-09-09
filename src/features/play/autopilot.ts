@@ -69,10 +69,9 @@ export function reduce(a: Auto, e: Event): { state: Auto; effects: Effect[] } {
       if (s.phase === 'paused') {
         const b = s.before ?? 'speaking';
         s.phase = b; s.before = null;
+        // a turn already in flight finishes on its own; a breath re-arms its own timer; only speech and the sweep restart
         if (b === 'speaking') fx.push('speak');
         if (b === 'waiting') fx.push('sweep');
-        if (b === 'playing') fx.push('play');
-        if (b === 'breath') fx.push('advance');
       }
       break;
     case 'again':

@@ -67,8 +67,10 @@ a { color: inherit; text-decoration: none; }
   display: flex; flex-direction: column; gap: 12px;
   width: 100%; max-width: var(--dock-max); margin: 0 auto;
   padding: 0 var(--pad) calc(var(--pad) + var(--safe-bottom));
-  pointer-events: auto;
+  /* text lets taps through to the cube behind it; only controls catch them */
+  pointer-events: none;
 }
+.dock button, .dock a, .dock input, .dock select, .dock label, .dock .swatches, .dock .ruler, .dock .play-swap, .dock .stones, .dock .stats { pointer-events: auto; }
 @media (min-width: 760px) and (orientation: landscape) {
   .screen { grid-template-columns: 55fr 45fr; grid-template-rows: 1fr; align-items: center; }
   .stage { height: 100%; }

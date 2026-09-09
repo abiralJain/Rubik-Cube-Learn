@@ -78,6 +78,20 @@ export default function FixPage() {
     if (next) tiltTo(next);
   }, [facelets, paintHistory, complete, tiltTo]);
 
+  // 53 in → the 54th is not a decision. Only while colouring in for the first time: once the cube has been complete,
+  // a cleared sticker is a correction and must stay cleared.
+  const wasComplete = useRef(complete);
+  useEffect(() => { if (complete) wasComplete.current = true; }, [complete]);
+  useEffect(() => {
+    if (filled !== 53 || wasComplete.current) return;
+    const short = FACES.find((f) => counts[f] === 8);
+    const hole = facelets.indexOf('.');
+    if (short && hole >= 0) {
+      const t = setTimeout(() => { paint(hole, short, true); sfx.cadence(); if (navigator.vibrate) navigator.vibrate([8, 40, 8]); }, 160);
+      return () => clearTimeout(t);
+    }
+  }, [filled, facelets, counts, paint]);
+
   const highlight = useMemo(() => (current ? new Set(current.touched) : pick !== null ? new Set([pick]) : null), [current, pick]);
 
   const onStickerTap = useCallback((i: number) => {
@@ -86,7 +100,8 @@ export default function FixPage() {
     if (complete) {
       // a tap on a piece the suggestions mention picks that fix; otherwise choose a sticker, then a colour
       const k = sug?.all.findIndex((x) => x.touched.includes(i)) ?? -1;
-      if (k >= 0 && pick === null && !(current && current.touched.includes(i))) { setAlt(k); sfx.plink(3, 0.1); return; }
+      if (pick === null && current && current.touched.includes(i)) { sfx.plink(3, 0.1); return; } // already the fix on offer
+      if (k >= 0 && pick === null) { setAlt(k); sfx.plink(3, 0.1); return; }
       setPick((p) => (p === i ? null : i));
       sfx.plink(2, 0.1);
       return;

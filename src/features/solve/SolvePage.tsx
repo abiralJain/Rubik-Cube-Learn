@@ -36,7 +36,7 @@ export default function SolvePage() {
     facelets: state === 'fresh' ? IDLE_FACELETS : facelets,
     orientation: state === 'ready' || state === 'learn' ? { top: 'D', front: 'F', yaw: -0.55, pitch: 0.14 } : HERO,
     interactive: true,
-    layerTurns: state === 'ready' || state === 'learn',
+    layerTurns: true,
     rippleOnTap: true,
     fill: 0.74,
   });
