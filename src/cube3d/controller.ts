@@ -463,9 +463,9 @@ export class CubeController {
       const isDim = !!this.highlight && !this.highlight.has(i);
       const target = isDim ? this.dimmed[i] : this.baseColor[i];
       const empty = this.displayFacelets[i] === '.';
-      const envT = empty ? STICKER_MAT.empty.envMapIntensity : isDim ? 0.18 : STICKER_MAT.full.envMapIntensity + 1.2 * this.bloomValue;
+      const envT = empty ? STICKER_MAT.empty.envMapIntensity : isDim ? 0.5 : STICKER_MAT.full.envMapIntensity + 1.2 * this.bloomValue;
       // a dimmed tile also goes matte and loses its shimmer, so it reads as "in shadow", not as dirty glass
-      const roughT = empty ? STICKER_MAT.empty.roughness : isDim ? 0.6 : STICKER_MAT.full.roughness;
+      const roughT = empty ? STICKER_MAT.empty.roughness : isDim ? 0.3 : STICKER_MAT.full.roughness;
       const iridT = empty ? 0 : isDim ? 0 : STICKER_MAT.full.iridescence + 0.7 * this.bloomValue;
       // highlighted stickers breathe outward so the eye finds them even on a busy cube
       if (this.highlight && this.highlight.has(i) && !sp.moving && !this.active?.stickerIds.includes(i)) {
@@ -477,7 +477,7 @@ export class CubeController {
       if (Math.abs(mat.roughness - roughT) > 0.003) { mat.roughness = damp(mat.roughness, roughT, HIGHLIGHT_DAMP, dt); moving = true; }
       if (Math.abs(mat.iridescence - iridT) > 0.003) { mat.iridescence = damp(mat.iridescence, iridT, HIGHLIGHT_DAMP, dt); moving = true; }
       // in shadow the glass darkens too, or the light tint would wash the dimmed stone out
-      const glassWant = this.tmpC.copy(this.glassTint[i]).multiplyScalar(isDim ? 0.3 : 1);
+      const glassWant = this.tmpC.copy(this.glassTint[i]).multiplyScalar(isDim ? 0.55 : 1);
       if (!mat.color.equals(glassWant)) {
         mat.color.r = damp(mat.color.r, glassWant.r, HIGHLIGHT_DAMP, dt); mat.color.g = damp(mat.color.g, glassWant.g, HIGHLIGHT_DAMP, dt); mat.color.b = damp(mat.color.b, glassWant.b, HIGHLIGHT_DAMP, dt);
         if (Math.abs(mat.color.r - glassWant.r) + Math.abs(mat.color.g - glassWant.g) + Math.abs(mat.color.b - glassWant.b) < 0.006) mat.color.copy(glassWant);

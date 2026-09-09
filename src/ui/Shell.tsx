@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useLocation } from 'react-router';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { create } from 'zustand';
 import { Glow, type Tint } from './Glow';
 import { Button } from './Button';
@@ -15,6 +15,7 @@ export const useShellState = create<{ tint: Tint | null; mode?: 'holo' | 'off'; 
 
 /** Routes that show the floating tab bar: the three sections. Flows (scan, fix, play, solved) run full-screen. */
 const TABBED = /^\/(journey|learn(\/.*)?)?$/;
+const FLOW = /^\/(scan|fix|play|solved)/;
 
 export function Shell() {
   const { tint, mode } = useShellState();
@@ -22,12 +23,14 @@ export function Shell() {
   const setSetting = useSession((s) => s.setSetting);
   const { pathname } = useLocation();
   const tabs = TABBED.test(pathname);
+  const flow = FLOW.test(pathname);
+  const nav = useNavigate();
   return (
     <div className="shell" style={{ ['--tint' as string]: tint ? `var(--a-${tint})` : 'var(--a-mint)' }}>
       <Glow tint={tint} mode={mode} />
       <PersistentStage />
       <header className="topbar">
-        <Link to="/" className="wordmark" aria-label="Cube home">Cube</Link>
+        {flow ? <Button variant="icon" aria-label="Close" onClick={() => nav('/')}><Icon name="close" /></Button> : <Link to="/" className="wordmark" aria-label="Cube home">Cube</Link>}
         <div className="toggles">
           <Button variant="icon" aria-label={settings.voice ? 'Turn the voice off' : 'Turn the voice on'} aria-pressed={settings.voice} onClick={() => setSetting('voice', !settings.voice)}>
             <Icon name={settings.voice ? 'voice' : 'voice-off'} />

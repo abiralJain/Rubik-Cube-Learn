@@ -1,7 +1,5 @@
 /* Journey: Opal's gems list. A header, a grid of stones, stats, one pill. */
 .journey { display: flex; flex-direction: column; gap: 14px; min-height: calc(100dvh - var(--topbar-h) - var(--safe-top)); padding-top: 4px; pointer-events: auto !important; }
-.journey-head { text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; padding: 8px var(--pad) 0; }
-.journey-head h1 { font-size: 28px; line-height: 34px; letter-spacing: -0.015em; }
 .gem-grid { list-style: none; margin: 0 auto; padding: 0 var(--pad); width: 100%; max-width: 560px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 @media (min-width: 600px) { .gem-cell img { width: 84px; height: 84px; } .gem-grid { gap: 12px; } .gem-name { font-size: 13px; } }
 .gem-grid li:nth-child(7) { grid-column: 2; }
@@ -25,7 +23,7 @@
 @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (min-width: 760px) and (orientation: landscape) {
   .journey { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; align-items: center; column-gap: 24px; padding: 0 var(--pad); }
-  .journey-head { grid-column: 1; grid-row: 1 / span 2; }
+  .journey .section-head { grid-column: 1; grid-row: 1 / span 2; }
   .gem-grid { grid-column: 2; grid-row: 1; padding: 0; }
   .journey .dock { grid-column: 2; grid-row: 2; }
 }

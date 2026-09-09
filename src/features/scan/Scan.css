@@ -1,22 +1,29 @@
-.cam-stage { position: relative; display: grid; place-items: center; padding: 8px var(--pad) 0; }
-.cam-frame { position: relative; width: min(100%, 62vh, 560px); aspect-ratio: 1; border-radius: var(--r-lg); overflow: hidden; background: #111; box-shadow: 0 0 0 1px var(--hair); }
+/* Scan: the camera square, the shared cube filling in beneath it, one sentence, six dots. */
+.scan { grid-template-rows: 1fr auto; }
+.scan-top { display: grid; grid-template-rows: auto 1fr; gap: 6px; padding: 4px var(--pad) 0; min-height: 0; pointer-events: none; }
+.cam-frame { position: relative; width: min(100%, 44vh, 480px); margin: 0 auto; aspect-ratio: 1; border-radius: var(--r-lg); overflow: hidden; background: #0E0E10; box-shadow: 0 0 0 1px var(--hair); pointer-events: auto; }
 .cam-frame video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cam-frame[data-mirror] video, .cam-frame[data-mirror] .guide { transform: scaleX(-1); }
-.guide { position: absolute; inset: 22%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4%; }
-.guide i { display: block; border-radius: 22%; box-shadow: inset 0 0 0 3px rgba(255,255,255,.55); background: var(--cell, transparent); opacity: .9; transition: background-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out); }
-.guide[data-steady] i { box-shadow: inset 0 0 0 5px rgba(255,255,255,.95); }
+/* the guide squares are exactly the patches being read */
+.guide { position: absolute; inset: 22%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); place-items: center; }
+.guide i { display: block; width: 40%; height: 40%; border-radius: 18%; box-shadow: inset 0 0 0 2px rgba(255,255,255,.45); background: var(--cell, transparent); opacity: .92; transition: background-color 140ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 200ms var(--ease-out); }
+.cam-frame[data-present] .guide i { box-shadow: inset 0 0 0 2px rgba(255,255,255,.85); }
+.guide[data-steady] i { transform: scale(calc(1 + var(--steady) * 0.12)); box-shadow: inset 0 0 0 3px rgba(255,255,255,1); }
 .cam-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 .cam-flash[data-on] { animation: flash 220ms var(--ease-out); }
 @keyframes flash { 0% { opacity: .35; } 100% { opacity: 0; } }
-.cam-prompt { text-align: center; font-weight: 600; font-size: 20px; line-height: 25px; letter-spacing: -0.01em; color: var(--ink); padding: 0 var(--pad); }
+.scan-cube { min-height: 120px; }
+.cam-prompt { text-align: center; font-weight: 600; font-size: 20px; line-height: 25px; letter-spacing: -0.01em; color: var(--ink); padding: 0 var(--pad); min-height: 72px; }
 .cam-prompt small { display: block; font-weight: 400; font-size: 15px; line-height: 20px; color: var(--ink-2); margin-top: 6px; }
-.cam-mini { position: absolute; right: 14px; bottom: 14px; width: 132px; height: 132px; border-radius: var(--r-md); overflow: hidden; pointer-events: none; }
-.cam-mini .cube3d { position: absolute; inset: 0; }
 .cam-dots { display: flex; gap: 8px; justify-content: center; }
 .cam-dots i { width: 12px; height: 12px; border-radius: 50%; background: var(--dot); opacity: .25; transition: opacity 250ms var(--ease-out), transform 300ms var(--spring); }
 .cam-dots i[data-done] { opacity: 1; }
 .cam-dots i[data-active] { opacity: 1; transform: scale(1.25); }
-.cam-row { display: flex; gap: 10px; }
-.cam-row .btn { flex: 1; }
+.scan-links { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; }
 .cam-nocam { text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 24px 0; }
-@media (min-width: 600px) { .cam-frame { width: min(100%, 76vh, 640px); } }
+@media (min-width: 760px) and (orientation: landscape) {
+  .scan { grid-template-columns: 55fr 45fr; grid-template-rows: 1fr; }
+  .scan-top { grid-template-rows: 1fr; grid-template-columns: 1fr 1fr; align-items: center; gap: 16px; }
+  .cam-frame { width: min(100%, 70vh, 520px); }
+  .scan-cube { min-height: 240px; height: 100%; }
+}

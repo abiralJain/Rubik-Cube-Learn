@@ -25,7 +25,7 @@ export default function JourneyPage() {
 
   return (
     <main className="journey has-tabs" aria-label="Journey">
-      <div className="journey-head">
+      <div className="section-head">
         <p className="caps">Journey</p>
         <h1>{solves === 0 ? 'Seven stones to earn.' : solves === 1 ? 'One solve. Seven stones.' : `${solves} solves.`}</h1>
         <p className="body">{solves === 0 ? 'Each stage of your first solve lights one.' : 'Every stage you pass lights its stone again.'}</p>

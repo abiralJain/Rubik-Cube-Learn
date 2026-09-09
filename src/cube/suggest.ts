@@ -24,10 +24,11 @@ export function suggest(f: Facelets, opts: { recentlyEdited?: number[] } = {}): 
   const r = core(f);
   if (r.ok || r.reason === 'incomplete') return { reason: r.ok ? null : r.reason, top: null, all: [] };
   let reps = repairs(f, { deep: true });
-  // rank: fewest stickers changed; then a recent edit is the likelier slip; keep the list short
+  // rank: fewest stickers changed; then a recent edit is the likelier slip. A twist or flip has 8 or 12 equal
+  // candidates (any corner or edge can absorb it), so the list stays complete and the UI lets a tap choose the piece.
   const recent = new Set(opts.recentlyEdited ?? []);
   const score = (x: Repair) => x.touched.length * 10 - (x.touched.some((i) => recent.has(i)) ? 5 : 0) + (x.kind === 'swap' ? 3 : 0);
-  reps = reps.sort((a, b) => score(a) - score(b)).slice(0, 6);
+  reps = reps.sort((a, b) => score(a) - score(b)).slice(0, 40);
   const all = reps.map((x) => describe(f, x));
   const out: Suggestions = { reason: r.reason, top: all[0] ?? null, all };
   if (cache.size > 64) cache.delete(cache.keys().next().value!);

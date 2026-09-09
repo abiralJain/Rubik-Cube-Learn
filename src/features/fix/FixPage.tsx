@@ -84,7 +84,9 @@ export default function FixPage() {
     if (isCentre(i)) { sfx.bloop(); return; }
     sfx.unlockAudio();
     if (complete) {
-      // choose a sticker, then a colour
+      // a tap on a piece the suggestions mention picks that fix; otherwise choose a sticker, then a colour
+      const k = sug?.all.findIndex((x) => x.touched.includes(i)) ?? -1;
+      if (k >= 0 && pick === null && !(current && current.touched.includes(i))) { setAlt(k); sfx.plink(3, 0.1); return; }
       setPick((p) => (p === i ? null : i));
       sfx.plink(2, 0.1);
       return;
@@ -95,7 +97,7 @@ export default function FixPage() {
     sfx.plink(NOTE[active]);
     if (navigator.vibrate) navigator.vibrate(6);
     if (!settings.seenPaintHint) setSetting('seenPaintHint', true);
-  }, [complete, facelets, active, paint, settings.seenPaintHint, setSetting]);
+  }, [complete, facelets, active, paint, settings.seenPaintHint, setSetting, sug, pick, current]);
 
   const recolour = useCallback((f: Face) => {
     if (pick === null) return;
@@ -142,7 +144,6 @@ export default function FixPage() {
 
   return (
     <main className="screen fix" aria-label={complete ? 'Fix the colours' : 'Colour in your cube'}>
-      <Button variant="icon" className="flow-close" aria-label="Back" onClick={() => nav('/')}><Icon name="close" /></Button>
       <div className="stage" ref={stageRef}>
         {!complete && <p className="caps fix-count num"><RollingNumber value={filled} /> of 54</p>}
       </div>
@@ -151,7 +152,7 @@ export default function FixPage() {
           {current && pick === null ? (
             <motion.div key={'sug' + current.facelets} className="fix-card" initial={reduce ? { opacity: 0 } : { opacity: 0, transform: 'translateY(8px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} exit={{ opacity: 0 }} transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }} role="status">
               <h1>{current.sentence}</h1>
-              <p className="body">{current.detail}</p>
+              <p className="body">{current.detail}{sug && sug.all.length > 1 ? ' If it is a different piece, tap it.' : ''}</p>
             </motion.div>
           ) : complete && !ready && pick !== null ? (
             <motion.div key="pick" className="fix-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
@@ -203,7 +204,7 @@ export default function FixPage() {
         </div>
         {current && pick === null && (
           <div className="fix-links">
-            {sug && sug.all.length > 1 && <Button variant="ghost" onClick={() => { setAlt((a) => a + 1); sfx.plink(1, 0.08); }}>Not this</Button>}
+            {sug && sug.all.length > 1 && <Button variant="ghost" onClick={() => { setAlt((a) => a + 1); sfx.plink(1, 0.08); }}>Not this one</Button>}
             <Button variant="ghost" onClick={() => { setPick(-1); }}>Something else is off</Button>
           </div>
         )}

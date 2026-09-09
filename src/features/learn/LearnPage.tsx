@@ -45,7 +45,7 @@ export default function LearnPage() {
 
   return (
     <main className="learn has-tabs" aria-label="Learn">
-      <div className="journey-head">
+      <div className="section-head">
         <p className="caps">Learn</p>
         <h1>Why it works.</h1>
         <p className="body">{openAll ? 'Seven short chapters, one per stage.' : 'Chapters open as you pass each stage. Everything opens after your first solve.'}</p>

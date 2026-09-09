@@ -95,7 +95,11 @@ export function useStage(props: StageProps) {
     const onScroll = () => measure();
     addEventListener('resize', measure); addEventListener('scroll', onScroll, true);
     const vv = window.visualViewport; vv?.addEventListener('resize', measure);
-    return () => { removeEventListener('resize', measure); removeEventListener('scroll', onScroll, true); vv?.removeEventListener('resize', measure); };
+    // a ResizeObserver misses pure moves (a sibling grew, a font loaded), so also re-measure a few times a second
+    let raf = 0, last = 0;
+    const tick = (t: number) => { raf = requestAnimationFrame(tick); if (t - last > 180) { last = t; measure(); } };
+    raf = requestAnimationFrame(tick);
+    return () => { removeEventListener('resize', measure); removeEventListener('scroll', onScroll, true); vv?.removeEventListener('resize', measure); cancelAnimationFrame(raf); };
   }, [measure]);
 
   return useCallback((node: HTMLElement | null) => {

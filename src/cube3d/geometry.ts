@@ -77,7 +77,7 @@ export function makeCoreMaterial(hex: string) {
 
 /** A dimmed tile is the same pigment in shadow: scaled in linear light, so the hue never drifts. */
 export function dimColor(base: Color, out: Color) {
-  return out.copy(base).multiplyScalar(0.3);
+  return out.copy(base).multiplyScalar(0.5);
 }
 
 let shadowTex: CanvasTexture | null = null;
