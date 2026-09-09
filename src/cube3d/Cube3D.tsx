@@ -26,6 +26,7 @@ export type Cube3DProps = CubeStageProps & {
   fill?: number;
   onMoveDone?: (move: Move, facelets: string, meta: { replay: boolean; user: boolean }) => void;
   onQueueIdle?: () => void;
+  onBackgroundTap?: () => void;
   rippleOnTap?: boolean;
   /** Learn mode: the move to draw on the cube. */
   cue?: Move | null;
@@ -43,7 +44,7 @@ const KEY_ROTATE: Record<string, [Vector3, number]> = {
 };
 
 const Cube3D = forwardRef<CubeHandle, Cube3DProps>(function Cube3D(
-  { facelets, interactive = true, layerTurns = false, highlight = null, onStickerTap, orientation = HERO, frame, fill, onMoveDone, onQueueIdle, rippleOnTap = true, cue = null, gate = null, onRejected, onReady },
+  { facelets, interactive = true, layerTurns = false, highlight = null, onStickerTap, orientation = HERO, frame, fill, onMoveDone, onQueueIdle, onBackgroundTap, rippleOnTap = true, cue = null, gate = null, onRejected, onReady },
   ref,
 ) {
   const ctrl = useMemo(() => new CubeController(facelets), []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -57,9 +58,9 @@ const Cube3D = forwardRef<CubeHandle, Cube3DProps>(function Cube3D(
   useEffect(() => { ctrl.setFacelets(facelets); }, [ctrl, facelets]);
   useEffect(() => { if (frame !== undefined) ctrl.setFrame(frame, fill); }, [ctrl, frame, fill]);
   useEffect(() => { ctrl.highlight = highlight; ctrl.invalidate(); }, [ctrl, highlight]);
-  useEffect(() => { ctrl.cue = cue; ctrl.cueUp = (orientation && !(orientation instanceof Quaternion) ? orientation.top : 'U') as 'U' | 'D'; ctrl.invalidate(); }, [ctrl, cue, orientation]);
+  useEffect(() => { ctrl.cue = cue; ctrl.invalidate(); }, [ctrl, cue]);
   useEffect(() => { ctrl.gate = gate; ctrl.onRejected = onRejected ?? null; }, [ctrl, gate, onRejected]);
-  useEffect(() => { ctrl.cb = { onMoveDone, onStickerTap, onQueueIdle }; }, [ctrl, onMoveDone, onStickerTap, onQueueIdle]);
+  useEffect(() => { ctrl.cb = { onMoveDone, onStickerTap, onQueueIdle, onBackgroundTap }; }, [ctrl, onMoveDone, onStickerTap, onQueueIdle, onBackgroundTap]);
 
   const first = useRef(true);
   useEffect(() => {

@@ -10,7 +10,7 @@ import { useShellState } from '@/ui/Shell';
 import { useSession } from '@/store/session';
 import { SOLVED, isSolved } from '@/cube/facelets';
 import { renderCard, shareBlob } from '@/features/share/renderCard';
-import { speak } from '@/features/play/speech';
+import { speak } from '@/features/play/voice';
 import * as sfx from '@/audio/sounds';
 
 const ease = [0.23, 1, 0.32, 1] as const;

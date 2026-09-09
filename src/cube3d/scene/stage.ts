@@ -28,6 +28,7 @@ export interface StageProps {
   onStickerTap?: (index: number) => void;
   onMoveDone?: (move: Move, facelets: string, meta: { replay: boolean; user: boolean }) => void;
   onQueueIdle?: () => void;
+  onBackgroundTap?: () => void;
   onRejected?: () => void;
 }
 

@@ -12,7 +12,7 @@ import { useSession, filledCount, type Facelet } from '@/store/session';
 import { FACES, FACE_COLOUR, faceOf, isCentre, idx, type Face } from '@/cube/facelets';
 import { validate } from '@/cube/validate';
 import { suggest, type Suggestion } from '@/cube/suggest';
-import { speak, hush } from '@/features/play/speech';
+import { speak, hush } from '@/features/play/voice';
 import * as sfx from '@/audio/sounds';
 
 const COLOUR_CSS: Record<Face, string> = { U: 'var(--c-white)', R: 'var(--c-red)', F: 'var(--c-green)', D: 'var(--c-yellow)', L: 'var(--c-orange)', B: 'var(--c-blue)' };

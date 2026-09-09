@@ -31,6 +31,7 @@ export function PersistentStage() {
         onStickerTap={props.onStickerTap}
         onMoveDone={props.onMoveDone}
         onQueueIdle={props.onQueueIdle}
+        onBackgroundTap={props.onBackgroundTap}
         onRejected={props.onRejected}
         frame={shown ? frame : null}
         fill={props.fill}

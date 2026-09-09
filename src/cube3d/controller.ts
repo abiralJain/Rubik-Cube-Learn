@@ -12,6 +12,7 @@ import { resolveOrientation, type Orientation } from './orientation';
 import * as sfx from '@/audio/sounds';
 
 const HALF_PI = Math.PI / 2;
+const SWEEP_S = 1.1, SWEEP_EVERY = 2.6;
 const FACE_NORMAL: Record<BaseMove, Vector3> = {
   U: new Vector3(0, 1, 0), D: new Vector3(0, -1, 0), R: new Vector3(1, 0, 0), L: new Vector3(-1, 0, 0), F: new Vector3(0, 0, 1), B: new Vector3(0, 0, -1),
 };
@@ -26,6 +27,8 @@ interface QueuedMove { move: Move; resolve: () => void; replay: boolean; ghost: 
 export interface ControllerCallbacks {
   onMoveDone?: (move: Move, facelets: string, meta: { replay: boolean; user: boolean }) => void;
   onStickerTap?: (index: number) => void;
+  /** A tap on the canvas that hit no sticker. */
+  onBackgroundTap?: () => void;
   onQueueIdle?: () => void;
 }
 
@@ -44,10 +47,14 @@ export class CubeController {
   gate: ((m: Move) => boolean) | null = null;
   onRejected: (() => void) | null = null;
   cue: Move | null = null;
-  /** Which face is up in the user's hands (cube-local). The hidden-face arrow is drawn along its edge. */
-  cueUp: BaseMove = 'U';
   cueOpacity = 0;
   cuePulse = new Spring(0, 260, 16);
+  /** The arrow's travelling head: 0..1 along the arc while a sweep runs, -1 otherwise. Loops every SWEEP_EVERY while cueLoop is on. */
+  cueSweep = -1;
+  cueLoop = false;
+  private sweepStart = -1;
+  private sweepLast = -Infinity;
+  startSweep() { this.sweepStart = this.t; this.invalidate(); }
   onReady: (() => void) | null = null;
   reduced = false;
   paused = false;
@@ -501,6 +508,13 @@ export class CubeController {
     if (this.cuePulse.moving) { this.cuePulse.step(dt); moving = true; }
     const cueTarget = this.cue && !this.active ? 1 : 0;
     if (Math.abs(this.cueOpacity - cueTarget) > 0.002) { this.cueOpacity = damp(this.cueOpacity, cueTarget, 14, dt); moving = true; } else this.cueOpacity = cueTarget;
+    // the sweep: a head travels the arc over SWEEP_MS, then rests; on a loop it goes again every SWEEP_EVERY
+    if (this.cue && !this.active && this.cueLoop && this.sweepStart < 0 && this.t - this.sweepLast > SWEEP_EVERY) this.sweepStart = this.t;
+    if (this.sweepStart >= 0) {
+      const k = (this.t - this.sweepStart) / SWEEP_S;
+      if (k >= 1 || !this.cue) { this.sweepStart = -1; this.sweepLast = this.t; this.cueSweep = -1; } else this.cueSweep = k;
+      moving = true;
+    }
 
     if (moving) this.invalidate();
     return moving;

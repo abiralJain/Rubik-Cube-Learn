@@ -133,7 +133,7 @@ export function useCubeGestures(canvas: HTMLCanvasElement | null, ctrl: CubeCont
         if (hitIndex >= 0) {
           if (opts.onTap) opts.onTap(hitIndex);
           else if (opts.onRipple) ctrl.ripple(hitIndex);
-        }
+        } else ctrl.cb.onBackgroundTap?.();
       } else if (mode === 'orbit') {
         // velocity from the last samples
         const a = samples[0], b = samples[samples.length - 1];

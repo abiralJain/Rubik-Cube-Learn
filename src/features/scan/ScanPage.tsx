@@ -9,7 +9,7 @@ import { useSession, EMPTY_FACELETS } from '@/store/session';
 import { FACE_COLOUR, FACES, idx, type Face } from '@/cube/facelets';
 import { medianRGB } from './classify';
 import { assign, cubePresent, nearest, rgbToOklab, identifyFaces, centreDistance, DEFAULT_ANCHORS, type RGB, type Lab } from './assign';
-import { speak, hush } from '@/features/play/speech';
+import { speak, hush } from '@/features/play/voice';
 import * as sfx from '@/audio/sounds';
 
 /** The order we ask for the sides, and how to hold the cube for each: white on top for the four sides, then tip for white and yellow. */
