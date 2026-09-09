@@ -22,7 +22,7 @@ const router = createBrowserRouter([
       { path: 'solved', element: wrap(<Solved />) },
     ],
   },
-]);
+], { basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/' });
 
 export function App() {
   return <RouterProvider router={router} />;

@@ -33,7 +33,7 @@ export default function HomePage() {
   return (
     <main className="home has-tabs">
       <div className="home-stage">
-        <CubeStage facelets={inProgress ? facelets : HOME_PATTERN} layerTurns interactive defer={!inProgress} poster={inProgress ? undefined : '/poster/home'} />
+        <CubeStage facelets={inProgress ? facelets : HOME_PATTERN} layerTurns interactive defer={!inProgress} poster={inProgress ? undefined : `${import.meta.env.BASE_URL}poster/home`} />
       </div>
       <div className="home-dock">
         {inProgress === 'learn' ? (

@@ -1,7 +1,9 @@
 // Minimal offline shell: cache the app shell on install, network-first for everything else.
+// The app may be served from a repo subpath (GitHub Pages), so every path is derived from this worker's own scope.
 const SHELL = 'cube-shell-v1';
+const BASE = new URL('./', self.location).pathname;
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(['/', '/index.html', '/manifest.webmanifest'])));
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll([BASE, `${BASE}index.html`, `${BASE}manifest.webmanifest`])));
   self.skipWaiting();
 });
 self.addEventListener('activate', (e) => {
@@ -16,6 +18,6 @@ self.addEventListener('fetch', (e) => {
         caches.open(SHELL).then((c) => c.put(e.request, copy)).catch(() => {});
         return res;
       })
-      .catch(() => caches.match(e.request).then((m) => m || caches.match('/')))
+      .catch(() => caches.match(e.request).then((m) => m || caches.match(BASE)))
   );
 });

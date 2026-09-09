@@ -278,7 +278,7 @@ function Milestone({ stage, reduce, onContinue }: { stage: StageId; reduce: bool
         <p className="body">{STAGE_DONE_LINE[stage]}</p>
       </div>
       <motion.div className="milestone-gem" initial={reduce ? { opacity: 0 } : { opacity: 0, transform: 'scale(0.88) translateY(12px)' }} animate={{ opacity: 1, transform: 'scale(1) translateY(0px)' }} transition={{ duration: 0.6, ease, delay: 0.1 }}>
-        {noGem ? <i className="milestone-orb" aria-hidden /> : <img src={`/gems/stage-${n}.webp`} alt="" decoding="async" onError={() => setNoGem(true)} />}
+        {noGem ? <i className="milestone-orb" aria-hidden /> : <img src={`${import.meta.env.BASE_URL}gems/stage-${n}.webp`} alt="" decoding="async" onError={() => setNoGem(true)} />}
       </motion.div>
       <motion.div className="milestone-foot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.45 }}>
         <p className="caption"><Icon name="check" /> Unlocked {today}</p>
