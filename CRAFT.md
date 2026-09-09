@@ -64,3 +64,13 @@ Motion and material values chosen for the Cube app, with the reason. Reviewed at
 - Studio: dim 0.2 tent, one 2×1 key at 16 stops, a 0.4×6 rim strip, a small quad above the camera, a strip behind. Directional lights 0.6 / 0.18 / 0.4, hemisphere 0.08, exposure 1.1. Transmission pass at half resolution (`transmissionResolutionScale 0.5`).
 - Camera: elevation 22°, hero yaw −0.7 / pitch 0.3 (the reference's corner view). A CSS floor reflection in the stage tint sits under the cube.
 - Headless note: with transmission on, one tablet screenshot in a batch failed with "Unable to capture screenshot"; a reload-and-retry fixed it. Worth watching on low-end devices.
+
+## Shipping it to GitHub Pages (2026-09-09)
+
+The first Pages URL rendered blank. Pages was set to the branch/legacy mode serving the root of `main`, so it handed browsers the *source* `index.html`, whose only script tag is `/src/main.tsx`. No browser executes TypeScript, so nothing ever mounted.
+
+- A workflow (`.github/workflows/pages.yml`) now type-checks, unit-tests, builds and publishes `dist/` through the official Pages actions, and the repo's Pages `build_type` is `workflow`.
+- `base` is `/Rubik-Cube-Learn/` for builds and `vite preview`, and `/` for the dev server — setting it unconditionally moves `localhost:5173` too, which would have broken the Playwright `baseURL` and every screenshot script. `BASE_PATH` overrides both.
+- Vite rewrites `href`/`src` in `index.html` for the base, `imagesrcset` included. What it does not touch is anything in `public/` or built at runtime, so the service worker derives its base from `self.location`, the manifest went relative (and its splash colours went black, a leftover from the light theme), and the router basename, home poster and stage gems read `import.meta.env.BASE_URL`.
+- Pages serves no rewrites, so the build emits `404.html` as a copy of `index.html`; Pages returns it for unmatched paths with the URL intact and the client router recovers. `python3 -m http.server` does not do this, so verifying deep links needed a small server that mimics Pages.
+- Found while checking the live site on a phone: Home's tab-bar clearance was padding *below* a min-height screen, which pushed the page past the viewport and let the fixed bar cover the last action until you scrolled. The clearance now lives inside the dock, and short portrait screens get a shorter stage and tighter dock. Zero overlap and no scrolling at 360×740, 390×844, 430×932, 820×1180, 1440×900.
