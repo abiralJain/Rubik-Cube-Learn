@@ -61,12 +61,12 @@ function repairs(f: Facelets, deep: boolean): number[][] {
 
 const MESSAGES: Record<ValidationReason, string> = {
   incomplete: 'Some stickers are still empty.',
-  counts: 'One colour has too many stickers. Every colour has exactly nine.',
-  centres: 'A centre sticker is the wrong colour.',
-  'bad-piece': 'One piece has colours that never sit together on a real cube.',
-  'corner-twist': 'One corner is twisted. Its three stickers were probably typed in rotated.',
-  'edge-flip': 'One edge is flipped. Its two stickers are probably swapped.',
-  parity: 'Two stickers swapped places somewhere.',
+  counts: 'One colour is used more than nine times.',
+  centres: 'A centre sticker has the wrong colour.',
+  'bad-piece': 'Two of these colours never share a piece.',
+  'corner-twist': 'One corner is turned. Its three colours go round the other way.',
+  'edge-flip': 'One edge is flipped. Its two colours are swapped.',
+  parity: 'Two stickers are swapped somewhere.',
 };
 
 export function validate(f: Facelets, opts: { recentlyEdited?: number[] } = {}): Validation {

@@ -6,7 +6,7 @@ import type { Move, BaseMove } from '@/cube/notation';
 import { turnsOf } from '@/cube/notation';
 import { FACES, STICKERS } from '../placements';
 import { moveDef } from '../moves';
-import { PITCH } from '../constants';
+import { PITCH, TILE_PROUD } from '../constants';
 
 /** Arc in the plane of a face, drawn a little above its stickers. Increasing t goes clockwise seen from outside when sign = +1. */
 class FaceArc extends Curve<Vector3> {
@@ -21,7 +21,7 @@ class Segment extends Curve<Vector3> {
   getPoint(t: number, target = new Vector3()) { return target.copy(this.a).lerp(this.b, t); }
 }
 
-const INK = new MeshBasicMaterial({ color: '#1B1830', transparent: true, opacity: 0, depthTest: true });
+const INK = new MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0, depthTest: true });
 
 function buildArrow(move: Move, up: BaseMove): Group {
   const g = new Group();
@@ -40,7 +40,7 @@ function buildArrow(move: Move, up: BaseMove): Group {
     const rotated = edgeSticker.position.clone().applyAxisAngle(def.axis, cw ? -Math.PI / 2 : Math.PI / 2);
     const dir = rotated.sub(edgeSticker.position).setComponent(1, 0).normalize();
     if (dir.lengthSq() < 0.5) dir.set(cw ? -1 : 1, 0, 0);
-    const c = nUp.clone().multiplyScalar(1.5 * PITCH + 0.24).add(n.clone().multiplyScalar(1.5 * PITCH - 0.35));
+    const c = nUp.clone().multiplyScalar(1.5 * PITCH + TILE_PROUD + 0.22).add(n.clone().multiplyScalar(1.5 * PITCH - 0.35));
     const len = half ? 1.25 : 1.0;
     const a = c.clone().addScaledVector(dir, -len), b = c.clone().addScaledVector(dir, len);
     g.add(new Mesh(new TubeGeometry(new Segment(a, b), 8, tube, 10), INK));
@@ -49,7 +49,7 @@ function buildArrow(move: Move, up: BaseMove): Group {
     return g;
   }
   // u × v = -n, so increasing angle is clockwise seen from outside the face.
-  const c = n.clone().multiplyScalar(1.5 * PITCH + 0.2);
+  const c = n.clone().multiplyScalar(1.5 * PITCH + TILE_PROUD + 0.18);
   const r = 1.18;
   const span = half ? Math.PI * 1.15 : Math.PI * 0.85;
   const a0 = -Math.PI / 2 - (cw ? span / 2 : -span / 2) + (cw ? 0 : 0);

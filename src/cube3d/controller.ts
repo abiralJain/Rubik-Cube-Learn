@@ -1,8 +1,8 @@
-import { Color, Euler, Quaternion, Vector3, type Mesh, type MeshPhysicalMaterial, type PerspectiveCamera } from 'three';
+import { Color, Euler, Quaternion, Vector3, type Mesh, type MeshBasicMaterial, type MeshPhysicalMaterial, type PerspectiveCamera } from 'three';
 import type { Move, BaseMove } from '@/cube/notation';
 import { makeMove } from '@/cube/notation';
 import { applyMove } from '@/cube/facelets';
-import { COLORS, HIGHLIGHT_DAMP, LAYER_LIFT, MOMENTUM_DECAY, MOMENTUM_STOP, SPRING } from './constants';
+import { COLORS, GLASS_TINT, HIGHLIGHT_DAMP, LAYER_LIFT, LOW_GPU, MOMENTUM_DECAY, MOMENTUM_STOP, SPRING, STICKER_MAT } from './constants';
 import { Spring, damp } from './spring';
 import { STICKERS, slotById } from './placements';
 import { moveDef } from './moves';
@@ -73,6 +73,8 @@ export class CubeController {
   // per-sticker springs / colours
   press: Spring[] = STICKERS.map(() => new Spring(0, SPRING.press.k, SPRING.press.c));
   baseColor: Color[] = STICKERS.map(() => new Color('#ffffff'));
+  coreBright: number[] = STICKERS.map(() => 1);
+  glassTint: Color[] = STICKERS.map(() => new Color('#ffffff'));
   dimmed: Color[] = STICKERS.map(() => new Color('#ffffff'));
   highlight: ReadonlySet<number> | null = null;
   squash = new Spring(0, SPRING.squash.k, SPRING.squash.c);
@@ -92,6 +94,7 @@ export class CubeController {
   cb: ControllerCallbacks = {};
 
   private tmpQ = new Quaternion();
+  private tmpC = new Color();
   private tmpV = new Vector3();
   private tmpE = new Euler();
 
@@ -109,8 +112,15 @@ export class CubeController {
       const mesh = this.stickers[i];
       if (mesh) {
         const m = mesh.material as MeshPhysicalMaterial;
-        const empty = f[i] === '.';
-        m.clearcoat = empty ? 0.3 : 1; m.roughness = empty ? 0.6 : 0.28; m.iridescence = empty ? 0 : 0.12; m.envMapIntensity = empty ? 0.5 : 1.1;
+        const s = f[i] === '.' ? STICKER_MAT.empty : STICKER_MAT.full;
+        m.clearcoat = s.clearcoat; m.clearcoatRoughness = s.clearcoatRoughness; m.roughness = s.roughness; m.iridescence = s.iridescence; m.envMapIntensity = s.envMapIntensity;
+        m.transmission = LOW_GPU ? 0 : s.transmission; m.thickness = s.thickness; m.attenuationDistance = s.attenuationDistance;
+        m.attenuationColor.set(GLASS_TINT[f[i]] ?? GLASS_TINT['.']);
+        this.glassTint[i].set(GLASS_TINT[f[i]] ?? GLASS_TINT['.']);
+        m.color.copy(this.glassTint[i]);
+        this.coreBright[i] = s.coreBright;
+        const core = mesh.children[0] as Mesh | undefined;
+        if (core) (core.material as MeshBasicMaterial).color.copy(this.baseColor[i]).multiplyScalar(s.coreBright);
       }
     }
     this.invalidate();
@@ -235,7 +245,7 @@ export class CubeController {
     const quarters = Math.round(a.spring.x / HALF_PI);
     // reset transforms
     for (const id of a.slotIds) { const b = this.bodies.get(id); const s = slotById.get(id)!; if (b) { b.position.copy(s.rest); b.quaternion.identity(); } }
-    for (const i of a.stickerIds) { const m = this.stickers[i]; const p = STICKERS[i]; if (m) { m.position.copy(p.position); m.quaternion.copy(p.quaternion); (m.material as MeshPhysicalMaterial).opacity = 1; (m.material as MeshPhysicalMaterial).transparent = false; } }
+    for (const i of a.stickerIds) { const m = this.stickers[i]; const p = STICKERS[i]; if (m) { m.position.copy(p.position); m.quaternion.copy(p.quaternion); (m.material as MeshPhysicalMaterial).opacity = LOW_GPU ? 0.55 : 1; (m.material as MeshPhysicalMaterial).transparent = LOW_GPU; const cm = (m.children[0] as Mesh | undefined)?.material as MeshBasicMaterial | undefined; if (cm) { cm.opacity = 1; cm.transparent = false; } } }
     this.ghostOpacity = 1;
     let move: Move | null = null;
     if (quarters !== 0) {
@@ -314,9 +324,8 @@ export class CubeController {
     for (let i = 0; i < 54; i++) {
       const m = this.stickers[i]?.material as MeshPhysicalMaterial | undefined; if (!m) continue;
       if (this.displayFacelets[i] === '.') continue;
-      m.iridescence = 0.12 + 0.88 * b;
+      // solved: the clay takes a glaze — clearcoat and a thin-film shimmer rise together, then relax
       m.iridescenceThicknessRange = [160 + 120 * b, 520 + 300 * b];
-      m.clearcoatRoughness = 0.12 - 0.06 * b;
     }
   }
 
@@ -371,7 +380,7 @@ export class CubeController {
         if (!m) continue;
         m.position.copy(p.position).applyQuaternion(qLayer).addScaledVector(a.nf, lift);
         m.quaternion.copy(qLayer).multiply(p.quaternion);
-        if (a.ghost) { const mat = m.material as MeshPhysicalMaterial; mat.transparent = true; mat.opacity = this.ghostOpacity; }
+        if (a.ghost) { const mat = m.material as MeshPhysicalMaterial; mat.transparent = true; mat.opacity = this.ghostOpacity; const cm = (m.children[0] as Mesh | undefined)?.material as MeshBasicMaterial | undefined; if (cm) { cm.transparent = true; cm.opacity = this.ghostOpacity; } }
       }
       const timedOut = a.mode === 'play' && this.t - a.started > 0.7 / Math.max(0.3, a.speed);
       if (a.mode === 'play' && (!stepping || timedOut)) this.commit();
@@ -394,9 +403,14 @@ export class CubeController {
         moving = true;
       } else if (m.scale.x !== 1) { m.scale.set(1, 1, 1); if (!this.active?.stickerIds.includes(i)) m.position.copy(p.position); }
       const mat = m.material as MeshPhysicalMaterial;
+      const core = (m.children[0] as Mesh | undefined)?.material as MeshBasicMaterial | undefined;
       const isDim = !!this.highlight && !this.highlight.has(i);
       const target = isDim ? this.dimmed[i] : this.baseColor[i];
-      const envT = this.displayFacelets[i] === '.' ? 0.5 : isDim ? 0.4 : 1.1 + 0.5 * this.bloomValue;
+      const empty = this.displayFacelets[i] === '.';
+      const envT = empty ? STICKER_MAT.empty.envMapIntensity : isDim ? 0.18 : STICKER_MAT.full.envMapIntensity + 1.2 * this.bloomValue;
+      // a dimmed tile also goes matte and loses its shimmer, so it reads as "in shadow", not as dirty glass
+      const roughT = empty ? STICKER_MAT.empty.roughness : isDim ? 0.6 : STICKER_MAT.full.roughness;
+      const iridT = empty ? 0 : isDim ? 0 : STICKER_MAT.full.iridescence + 0.7 * this.bloomValue;
       // highlighted stickers breathe outward so the eye finds them even on a busy cube
       if (this.highlight && this.highlight.has(i) && !sp.moving && !this.active?.stickerIds.includes(i)) {
         const lift = 0.06 * (0.5 + 0.5 * Math.sin(this.t * 4));
@@ -404,12 +418,24 @@ export class CubeController {
         moving = true;
       } else if (!this.highlight && !sp.moving && !this.active && m.position.distanceToSquared(p.position) > 1e-8) m.position.copy(p.position);
       if (Math.abs(mat.envMapIntensity - envT) > 0.005) { mat.envMapIntensity = damp(mat.envMapIntensity, envT, HIGHLIGHT_DAMP, dt); moving = true; }
-      if (!mat.color.equals(target)) {
-        mat.color.r = damp(mat.color.r, target.r, HIGHLIGHT_DAMP, dt);
-        mat.color.g = damp(mat.color.g, target.g, HIGHLIGHT_DAMP, dt);
-        mat.color.b = damp(mat.color.b, target.b, HIGHLIGHT_DAMP, dt);
-        if (Math.abs(mat.color.r - target.r) + Math.abs(mat.color.g - target.g) + Math.abs(mat.color.b - target.b) < 0.004) mat.color.copy(target);
+      if (Math.abs(mat.roughness - roughT) > 0.003) { mat.roughness = damp(mat.roughness, roughT, HIGHLIGHT_DAMP, dt); moving = true; }
+      if (Math.abs(mat.iridescence - iridT) > 0.003) { mat.iridescence = damp(mat.iridescence, iridT, HIGHLIGHT_DAMP, dt); moving = true; }
+      // in shadow the glass darkens too, or the light tint would wash the dimmed stone out
+      const glassWant = this.tmpC.copy(this.glassTint[i]).multiplyScalar(isDim ? 0.3 : 1);
+      if (!mat.color.equals(glassWant)) {
+        mat.color.r = damp(mat.color.r, glassWant.r, HIGHLIGHT_DAMP, dt); mat.color.g = damp(mat.color.g, glassWant.g, HIGHLIGHT_DAMP, dt); mat.color.b = damp(mat.color.b, glassWant.b, HIGHLIGHT_DAMP, dt);
+        if (Math.abs(mat.color.r - glassWant.r) + Math.abs(mat.color.g - glassWant.g) + Math.abs(mat.color.b - glassWant.b) < 0.006) mat.color.copy(glassWant);
         moving = true;
+      }
+      if (core) {
+        // the core carries the stone's colour
+        const want = this.tmpC.copy(target).multiplyScalar(this.coreBright[i]);
+        const cc = core.color;
+        if (!cc.equals(want)) {
+          cc.r = damp(cc.r, want.r, HIGHLIGHT_DAMP, dt); cc.g = damp(cc.g, want.g, HIGHLIGHT_DAMP, dt); cc.b = damp(cc.b, want.b, HIGHLIGHT_DAMP, dt);
+          if (Math.abs(cc.r - want.r) + Math.abs(cc.g - want.g) + Math.abs(cc.b - want.b) < 0.006) cc.copy(want);
+          moving = true;
+        }
       }
     }
 

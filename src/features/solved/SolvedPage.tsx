@@ -93,12 +93,13 @@ export default function SolvedPage() {
         <AnimatePresence>
           {phase === 'copy' && (
             <motion.div key="copy" className="solved-copy" initial={reduce ? { opacity: 0 } : { opacity: 0, transform: 'translateY(10px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} transition={{ duration: 0.4, ease }}>
-              <h1>You solved it!</h1>
-              <motion.div className="solved-stats" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } } }}>
-                {[[`${mm}:${String(ss).padStart(2, '0')}`, 'time'], [String(stats.moves), 'turns'], ['7', 'stages']].map(([v, l]) => (
-                  <motion.span key={l} variants={{ hidden: { opacity: 0, transform: 'translateY(6px)' }, show: { opacity: 1, transform: 'translateY(0px)' } }} transition={{ duration: 0.3, ease }}>
-                    <b className="num">{v}</b>{l}
-                  </motion.span>
+              <p className="caps" data-tint>Solved</p>
+              <h1>You solved it.</h1>
+              <motion.div className="stats" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } } }}>
+                {[[`${mm}:${String(ss).padStart(2, '0')}`, 'Time'], [String(stats.moves), 'Turns'], ['7', 'Stages']].map(([v, l]) => (
+                  <motion.div key={l} className="stat" variants={{ hidden: { opacity: 0, transform: 'translateY(6px)' }, show: { opacity: 1, transform: 'translateY(0px)' } }} transition={{ duration: 0.3, ease }}>
+                    <b>{v}</b><span>{l}</span>
+                  </motion.div>
                 ))}
               </motion.div>
             </motion.div>
@@ -108,8 +109,8 @@ export default function SolvedPage() {
           <Reveal className="solved-actions" delay={450}>
             <Button tone="holo" onClick={share} block><Icon name="share" /> Share</Button>
             <div className="row">
-              <Button variant="ghost" onClick={solveAgain}><Icon name="replay" /> Solve again</Button>
-              <Button variant="ghost" onClick={scrambleForMe}><Icon name="rotate" /> Scramble for me</Button>
+              <Button variant="secondary" onClick={solveAgain}>Solve again</Button>
+              <Button variant="secondary" onClick={scrambleForMe}>Scramble for me</Button>
             </div>
             <p className="keep">Keep turning it. Solved is a place you can always get back to.</p>
           </Reveal>
@@ -124,8 +125,8 @@ export default function SolvedPage() {
             <h3>Share your solve</h3>
             {card ? <img className="preview" src={card} alt="Your solved cube with the time and number of turns" /> : <div className="preview" aria-hidden />}
             <div className="row">
-              <Button tone="blue" onClick={sendCard} disabled={!card}><Icon name="share" /> Send the card</Button>
-              <Button variant="ghost" onClick={copyLink}><Icon name="link" /> {copied ? 'Copied' : 'Copy link'}</Button>
+              <Button onClick={sendCard} disabled={!card}><Icon name="share" /> Send the card</Button>
+              <Button variant="secondary" onClick={copyLink}><Icon name="link" /> {copied ? 'Copied' : 'Copy link'}</Button>
             </div>
             <Button variant="ghost" onClick={() => setSheet(false)}>Done</Button>
           </motion.div>

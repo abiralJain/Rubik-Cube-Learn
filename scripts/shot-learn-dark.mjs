@@ -1,0 +1,21 @@
+// Learn screen on a phone, headless. Usage: node scripts/shot-learn-dark.mjs <outDir>
+import { chromium } from 'playwright';
+const out = process.argv[2] ?? 'shots';
+const C = 'UDLFUBFFBDLFRRLBBRUURRFUFDDDLLUDDUBFBRRULDBBLUFRFBLDRL';
+const browser = await chromium.launch();
+const GPU = process.env.GPU ?? 'high';
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+  await page.addInitScript((g) => localStorage.setItem('cube.gpu', g), GPU);
+page.on('pageerror', (e) => console.log('pageerror', e.message));
+await page.goto(`http://localhost:5173/learn?c=${C}`);
+await page.waitForFunction(() => window.__cube?.ready === true, null, { timeout: 40000 });
+await page.evaluate(() => { const c = window.__cube; c.reduced = true; c.floatY = 0; c.breath = 1; c.qDrift.identity(); c.invalidate(); });
+await page.waitForTimeout(700);
+await page.screenshot({ path: `${out}/learn-hold.png` });
+await page.getByRole('button', { name: /got it/i }).click();
+await page.waitForTimeout(1200);
+await page.evaluate(() => { const c = window.__cube; c.floatY = 0; c.qDrift.identity(); c.invalidate(); });
+await page.waitForTimeout(300);
+await page.screenshot({ path: `${out}/learn-move.png` });
+await browser.close();
+console.log('ok');

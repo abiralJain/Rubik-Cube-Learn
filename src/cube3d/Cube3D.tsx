@@ -88,7 +88,7 @@ const Cube3D = forwardRef<CubeHandle, Cube3DProps>(function Cube3D(
   }), [ctrl]);
 
   useEffect(() => () => ctrl.dispose(), [ctrl]);
-  useEffect(() => { if (import.meta.env.DEV) (window as unknown as { __cube?: CubeController }).__cube = ctrl; }, [ctrl]);
+  useEffect(() => { if (import.meta.env.DEV) { (window as unknown as { __cube?: CubeController }).__cube = ctrl; import('three').then((T) => { (window as unknown as { __THREE?: unknown }).__THREE = T; }); } }, [ctrl]);
 
   const onKey = (e: React.KeyboardEvent) => {
     if (!interactive) return;

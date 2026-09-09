@@ -1,7 +1,9 @@
 // Renders the live cube once at the hero orientation into a transparent square poster (shown before WebGL boots).
 import { chromium } from 'playwright';
 const browser = await chromium.launch();
+const GPU = process.env.GPU ?? 'high';
 const page = await browser.newPage({ viewport: { width: 720, height: 720 }, deviceScaleFactor: 2 });
+  await page.addInitScript((g) => localStorage.setItem('cube.gpu', g), GPU);
 await page.goto('http://localhost:5173/?poster=1');
 await page.waitForFunction(() => window.__cube?.ready === true, null, { timeout: 30000 });
 await page.waitForTimeout(600);

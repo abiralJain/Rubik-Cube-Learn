@@ -36,3 +36,31 @@ Motion and material values chosen for the Cube app, with the reason. Reviewed at
 - Paint first run: a breathing ring follows a front sticker until the first tap; never shown again.
 - Spring rest criterion loosened to |x−target| < 0.002 and |v| < 0.02 (from 0.001 / 0.001): imperceptible at 60 fps, but the old threshold let a finished turn linger "active" for a second in low-frame-rate environments.
 - Playwright pinned to one worker: four headless browsers rendering WebGL in software starved each other and turned five-second tests into timeouts.
+
+## Opal skin and the cut-stone cube (2026-09-08, late)
+
+- Direction reset: the light "Opal Way" mock was rejected as slop. The skin now copies Opal's system literally on its native black: SF Pro / Inter, 22/28 semibold sentences, 15/20 body at 60 %, 11 px small caps at +0.08 em, 52 px pills (dark base with the pale-yellow→mint sheen along the bottom edge), 36 px icon circles, outlined stat pills, rounded cards at 6 % white, the floating three-item tab bar, and a 3 px segmented progress bar. Colour lives only in the cube, the stage-tinted room light, and data words.
+- Cube finish: "Clay" (matte) read as dull on black; four glossy candy passes read as the rejected candy. What worked is geometry, not gloss: each tile is an `ExtrudeGeometry` square with a two-ring chamfer (`bevelThickness 0.11`, `bevelSize 0.13`, `bevelSegments 2`, flat shading) sitting 0.22 proud of a glossy black body, deep enamel colours (`#128F4E` green, `#C8231F` red, `#1F4FC2` blue), roughness 0.04, clearcoat 1, ior 2.0, iridescence 0.2.
+- Lighting: the default room environment floods every tile pastel. Replaced by a jeweller's studio built in code: a 0.32 grey light tent, one 12-stop warm key softbox high front-left, a cool vertical strip on the right (wall facets), a strip above-behind the camera (tables), a dim floor bounce. Directional lights cut to 0.85 / 0.25 / 0.55, hemisphere 0.15, exposure 1.05. Small hard lights on black are what make facets read as facets.
+- Dimmed tiles: HSL darkening turned muddy under the warm key. Now the pigment is scaled ×0.3 in linear light (hue never drifts), roughness eases to 0.6, environment to 0.18 and iridescence to 0, all damped at 12 /s. Key light is neutral white so darks stay clean.
+- Learn: the algorithm ruler (Opal's duration scrubber) shows every move of the step as a tick, the current one 1.6× at the centre mark; the sentence names the layer in the stage colour. The on-cube arrow stays, lifted by the tile height plus 0.18 and drawn in white.
+- Stage complete: a full-screen milestone (Opal's gem detail) with the stage's stone composited by `mix-blend-mode: screen` from `/public/gems/stage-N.png`; falls back to a lit orb until the images exist. Not shown for the last stage, which is the Solved page itself.
+- Headless note: the in-app Browser pane keeps `document.hidden` true, so requestAnimationFrame never runs and the WebGL cube never boots there. All visual checks in this pass were rendered with Playwright (`scripts/shot-opal.mjs`, `shot-learn-dark.mjs`, `shot-milestone.mjs`, `shot-wide.mjs`, `gem-variants.mjs`).
+
+## Round two on the Opal skin (2026-09-08, night)
+
+- Layout: side-by-side only in landscape (`min-width: 760px and orientation: landscape`); portrait tablets stack like a phone with a taller stage. The cube's on-screen radius is capped at 250 px in `CameraFit`, so it reads as an object you hold, not a wall.
+- Learn no longer redirects silently. With no valid cube it shows a gate: one sentence, one pill (Colour it in / Fix it), the tab bar stays.
+- Home gained two states: "Ready" (54 valid stickers, Start) and "one thing off" (54 stickers that cannot be a cube: the validator's sentence as the headline, Show me → Paint).
+- Validator sentences rewritten as plain instructions ("One edge is flipped. Its two colours are swapped."). Paint's issue card now says what to do once the suspects are lit.
+- Cube: brighter key (14 stops), exposure 1.18, env 1.15, a slightly more luminous palette; room light at 28 % when a stage tints it.
+- Gems: `public/gems/stage-N.png` converted to 1024 px WebP (~45 KB each) and composited with a screen blend on the milestone screen.
+
+## The gemstone cube (2026-09-08, late night)
+
+- Reference: the user generated a cube in the gems' lighting (`public/ref/cube.png`): step-cut stones with light inside, thin black bezels, hard facet highlights, a coloured floor reflection, a higher corner-on camera.
+- Opaque materials could not do "light inside". The tile is now two meshes: a glass crown (`MeshPhysicalMaterial`, transmission 1, thickness 0.25, ior 2.4, roughness 0.03, clearcoat 1, iridescence 0.25) over an unlit faceted core (`MeshBasicMaterial`, vertex colours jittered per facet, colour × 1.5). The crown's own colour and attenuation are a light tint per face (`GLASS_TINT`) so yellow stays yellow through the glass; the core carries the saturated colour.
+- Geometry: `stepCutGeometry` builds an octagonal step cut (five rings to a small table) as non-indexed triangles with per-facet vertex shade. Crown shade is flat; the core's jitters so the inside sparkles. Core is scaled 0.86 and sits 0.01 behind the crown. Cores skip raycasting; the controller drives the core colour (and now the glass colour) through the same damped dim/highlight pass, and ghosts both layers.
+- Studio: dim 0.2 tent, one 2×1 key at 16 stops, a 0.4×6 rim strip, a small quad above the camera, a strip behind. Directional lights 0.6 / 0.18 / 0.4, hemisphere 0.08, exposure 1.1. Transmission pass at half resolution (`transmissionResolutionScale 0.5`).
+- Camera: elevation 22°, hero yaw −0.7 / pitch 0.3 (the reference's corner view). A CSS floor reflection in the stage tint sits under the cube.
+- Headless note: with transmission on, one tablet screenshot in a batch failed with "Unable to capture screenshot"; a reload-and-retry fixed it. Worth watching on low-end devices.

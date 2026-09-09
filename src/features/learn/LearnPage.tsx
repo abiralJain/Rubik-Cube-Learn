@@ -20,8 +20,9 @@ import * as sfx from '@/audio/sounds';
 import { smartCubeAvailable, connectGan, type MoveSource } from '@/features/smartcube/gan';
 
 const STAGE_TINT: Record<StageId, GlowTint> = { 'white-cross': 'white', 'white-corners': 'white', 'middle-edges': 'green', 'yellow-cross': 'yellow', 'yellow-corners': 'yellow', 'position-corners': 'orange', 'position-edges': 'blue' };
-const GEM_HEX: Record<StageId, string> = { 'white-cross': '#FFFDF8', 'white-corners': '#FFFDF8', 'middle-edges': '#3DBE72', 'yellow-cross': '#FFD54A', 'yellow-corners': '#FFD54A', 'position-corners': '#FF9440', 'position-edges': '#3E7BE0' };
-const GEM: Record<StageId, string> = { 'white-cross': 'var(--c-white-deep)', 'white-corners': 'var(--c-white-deep)', 'middle-edges': 'var(--c-green)', 'yellow-cross': 'var(--c-yellow)', 'yellow-corners': 'var(--c-yellow)', 'position-corners': 'var(--c-orange)', 'position-edges': 'var(--c-blue)' };
+const GEM_HEX: Record<StageId, string> = { 'white-cross': '#ECEAE3', 'white-corners': '#ECEAE3', 'middle-edges': '#5CCB8E', 'yellow-cross': '#F5CC4A', 'yellow-corners': '#F5CC4A', 'position-corners': '#F5924A', 'position-edges': '#6F9AE6' };
+/** The words in a sentence that name the layer being turned; they take the stage colour like Opal's data words. */
+const LAYER_WORDS = ['top layer', 'bottom layer', 'right side', 'left side', 'front', 'back'];
 
 export default function LearnPage() {
   const nav = useNavigate();
@@ -31,14 +32,18 @@ export default function LearnPage() {
   const setShell = useShellState((s) => s.set);
   const cubeRef = useRef<CubeHandle>(null);
 
-  // entry guard: need a complete, valid cube
+  // entry guard: need a complete, valid cube. A shared link imports once (the store updates re-run this effect before the URL clears).
+  const imported = useRef(false);
   useEffect(() => {
     const shared = params.get('c');
-    if (shared && /^[URFDLB]{54}$/.test(shared) && validate(shared).ok) { setFacelets(shared, 'paint'); startLearn(shared); setParams({}, { replace: true }); return; }
+    if (shared && !imported.current && /^[URFDLB]{54}$/.test(shared) && validate(shared).ok) { imported.current = true; setFacelets(shared, 'paint'); startLearn(shared); setParams({}, { replace: true }); return; }
+    if (shared) return;
     if (learn) return;
-    if (!isComplete(facelets) || !validate(facelets).ok) { nav('/paint', { replace: true }); return; }
+    if (!isComplete(facelets) || !validate(facelets).ok) return; // gated below
     startLearn(facelets);
   }, [learn, facelets, nav, startLearn, params, setParams, setFacelets]);
+  const blocked = !learn && !params.get('c') ? (!isComplete(facelets) ? 'incomplete' : !validate(facelets).ok ? 'invalid' : null) : null;
+  useEffect(() => { if (blocked) setShell({ tint: null }); }, [blocked, setShell]);
 
   const flat = usePlan(learn?.start ?? null);
   const cardIndex = learn?.card ?? 0;
@@ -46,7 +51,7 @@ export default function LearnPage() {
   const current = useMemo(() => (flat && learn ? stateAt(learn.start, flat.cards, cardIndex) : facelets), [flat, learn, cardIndex, facelets]);
   const moveNo = flat ? movesBefore(flat.cards, cardIndex) : 0;
   const stage: StageId = card && card.type !== 'done' ? card.stage : 'position-edges';
-  const [praise, setPraise] = useState<string | null>(null);
+  const [milestone, setMilestone] = useState<StageId | null>(null);
   const [smart, setSmart] = useState<MoveSource | null>(null);
   const [deviation, setDeviation] = useState<Move[]>([]);
   const [wrong, setWrong] = useState(0);
@@ -89,9 +94,11 @@ export default function LearnPage() {
     const nextState = stateAt(learn.start, flat.cards, next);
     if (card.type === 'move' && card.lastOfStage) {
       const line = STAGE_DONE_LINE[card.stage];
-      setPraise(line); sfx.stageChime();
+      sfx.stageChime();
       cubeRef.current?.controller.celebrate(GEM_HEX[card.stage]); if (settings.voice) setTimeout(() => speak(line), 200);
-      setTimeout(() => setPraise(null), 2200);
+      if (navigator.vibrate) navigator.vibrate([8, 30, 12]);
+      // every stage but the last is a milestone screen; the last one is the Solved page itself
+      if (flat.cards[next]?.type !== 'done') setTimeout(() => setMilestone(card.stage), 650);
     }
     setWrong(0);
     if (flat.cards[next]?.type === 'done') {
@@ -106,13 +113,14 @@ export default function LearnPage() {
   const onNext = useCallback(async () => {
     if (!card || busy.current) return;
     sfx.unlockAudio();
+    if (milestone) { setMilestone(null); return; }
     if (card.type === 'move') {
       busy.current = true;
       await cubeRef.current?.play(card.move);
       busy.current = false;
     }
     advance(false);
-  }, [card, advance]);
+  }, [card, advance, milestone]);
 
   const onPrev = useCallback(async () => {
     if (!flat || !learn || cardIndex === 0 || busy.current) return;
@@ -130,7 +138,7 @@ export default function LearnPage() {
     busy.current = false;
   }, [card]);
 
-  // the child turned the on-screen cube
+  // the learner turned the on-screen cube
   const onMoveDone = useCallback((m: Move, _f: string, meta: { replay: boolean; user: boolean }) => {
     if (!meta.user || meta.replay) return;
     if (card?.type === 'move' && m === card.move) advance(true);
@@ -165,68 +173,139 @@ export default function LearnPage() {
     return () => removeEventListener('keydown', onKey);
   }, [onNext, onPrev, onAgain]);
 
+  // the step's moves for the ruler
+  const stepMoves = useMemo(() => {
+    if (!flat || card?.type !== 'move') return [];
+    return flat.cards.filter((c): c is Extract<Card, { type: 'move' }> => c.type === 'move' && c.stepIndex === card.stepIndex).map((c) => c.display);
+  }, [flat, card]);
+
+  if (blocked) return <LearnGate kind={blocked} message={blocked === 'invalid' ? (validate(facelets) as { message?: string }).message : undefined} onPaint={() => nav('/paint')} onScan={() => nav('/camera')} />;
   if (!flat || !card || !learn) return <main className="screen"><div className="stage" /><div className="dock" /></main>;
 
   const mm = Math.floor(elapsed / 60000), ss = Math.floor((elapsed % 60000) / 1000);
   const stageIdx = STAGES.indexOf(stage);
   const done = (st: StageId) => flat.stageLastCard[st] >= 0 ? cardIndex > flat.stageLastCard[st] : STAGES.indexOf(st) < stageIdx;
+  const stageProgress = (st: StageId) => {
+    if (done(st)) return 1;
+    if (st !== stage) return 0;
+    const a = flat.stageFirstCard[st], b = flat.stageLastCard[st];
+    return b > a ? (cardIndex - a) / (b - a + 1) : 0;
+  };
+  const moveShown = Math.min(moveNo + (card.type === 'move' ? 1 : 0), flat.totalMoves);
 
   return (
     <main className="screen" aria-label="Learn to solve">
       <div className="stage">
+        <div className="segs learn-segs" role="progressbar" aria-valuemin={1} aria-valuemax={7} aria-valuenow={stageIdx + 1} aria-label={`Stage ${stageIdx + 1} of 7: ${STAGE_NAME[stage]}`}>
+          {STAGES.map((st) => <i key={st} data-done={done(st) ? '' : undefined} style={{ '--p': stageProgress(st) } as CSSProperties} />)}
+        </div>
         <CubeStage facelets={current} layerTurns interactive highlight={highlight} orientation={orientation} cue={cue} gate={gate} onMoveDone={onMoveDone} onRejected={onRejected} cubeRef={cubeRef} />
-        <AnimatePresence>
-          {praise && (
-            <motion.p key={praise} className="praise" initial={{ opacity: 0, transform: 'translateY(6px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}>{praise}</motion.p>
-          )}
-        </AnimatePresence>
       </div>
-      <div className="dock">
-        <section className="glass learn-card" aria-live="polite">
-          <div className="gems" aria-label={`Stage ${stageIdx + 1} of 7: ${STAGE_NAME[stage]}`}>
-            {STAGES.map((st) => (
-              <span key={st} className="gem" style={{ '--gem': GEM[st] } as CSSProperties} data-done={done(st) ? '' : undefined} data-active={st === stage && !done(st) ? '' : undefined} title={STAGE_NAME[st]} />
-            ))}
-          </div>
-          <div className="learn-head">
-            <h2>{STAGE_NAME[stage]}</h2>
-            <span className="meta num">Move {Math.min(moveNo + (card.type === 'move' ? 1 : 0), flat.totalMoves)} of {flat.totalMoves} · {mm}:{String(ss).padStart(2, '0')}</span>
-          </div>
-          <div className="learn-swap">
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.div key={cardIndex} className="learn-body"
-                initial={{ opacity: 0, filter: reduce ? 'none' : 'blur(2px)' }} animate={{ opacity: 1, filter: 'blur(0px)' }} exit={{ opacity: 0, filter: reduce ? 'none' : 'blur(2px)' }} transition={{ duration: 0.12 }}>
-                {card.type === 'hold' && (<>
-                  <div className="glyph" data-hold><Icon name="rotate" style={{ width: 40, height: 40 }} /></div>
-                  <p className="sentence">{card.text}</p>
-                </>)}
-                {card.type === 'move' && (<>
-                  <div className="glyph">{card.display}<small>{card.display.endsWith("'") ? 'anticlockwise' : card.display.endsWith('2') ? 'twice' : 'clockwise'}</small></div>
-                  <p className="sentence">{describe(card.display)}{card.firstOfStep && <span className="why">{card.explanation}</span>}</p>
-                </>)}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          {card.type === 'move' && card.tip && card.firstOfStep && <p className="tip"><Icon name="bulb" />{card.tip}</p>}
-          {wrong >= 1 && card.type === 'move' && <p className="tip"><Icon name="rotate" />Try sliding the other way, or follow the arrow on the cube.</p>}
-          <div className="learn-actions">
-            <Button variant="ghost" onClick={onPrev} disabled={cardIndex === 0} aria-label="Previous"><Icon name="arrow-left" /></Button>
-            <Button className="btn-primary" tone={STAGE_TINT[stage]} onClick={onNext} block>
-              {card.type === 'hold' ? 'Got it' : 'Next'} <Icon name="arrow-right" />
-            </Button>
-          </div>
-          <div className="learn-secondary">
-            <Button variant="ghost" onClick={onAgain} disabled={card.type !== 'move'}><Icon name="replay" /> <span className="long">Show me again</span><span className="short">Again</span></Button>
-            <Button variant="ghost" onClick={onPrev} disabled={cardIndex === 0}><Icon name="undo" /> <span className="long">Undo my last turn</span><span className="short">Undo turn</span></Button>
-          </div>
-        </section>
-        {deviation.length > 0 && <p className="tip" role="status"><Icon name="rotate" />That turn wasn’t the one. Undo it: {describe(invert(deviation[deviation.length - 1]))}</p>}
-        <p style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14, fontWeight: 600 }}>
+      <AnimatePresence>
+        {milestone && <Milestone key={milestone} stage={milestone} reduce={!!reduce} onContinue={() => setMilestone(null)} />}
+      </AnimatePresence>
+
+      <div className="dock" aria-live="polite">
+        <div className="learn-head">
+          <span className="caps meta num">Move {moveShown} of {flat.totalMoves} · {STAGE_NAME[stage]} · {mm}:{String(ss).padStart(2, '0')}</span>
+        </div>
+
+        {card.type === 'move' && <Ruler moves={stepMoves} index={card.moveIndex} />}
+
+        <div className="learn-swap">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div key={cardIndex} className="learn-body"
+              initial={{ opacity: 0, filter: reduce ? 'none' : 'blur(2px)' }} animate={{ opacity: 1, filter: 'blur(0px)' }} exit={{ opacity: 0, filter: reduce ? 'none' : 'blur(2px)' }} transition={{ duration: 0.12 }}>
+              {card.type === 'hold' && <p className="say">{card.text}</p>}
+              {card.type === 'move' && (<>
+                <p className="say">{colourLayer(describe(card.display))}</p>
+                {card.firstOfStep && <p className="why">{card.explanation}</p>}
+                {card.firstOfStep && card.tip && <p className="tip">{card.tip}</p>}
+              </>)}
+              {wrong >= 1 && card.type === 'move' && <p className="tip">Try sliding the other way, or follow the arrow on the cube.</p>}
+              {deviation.length > 0 && <p className="tip" role="status">That turn wasn’t the one. Undo it: {describe(invert(deviation[deviation.length - 1]))}</p>}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <div className="learn-actions">
+          <Button className="btn-primary" tone={STAGE_TINT[stage]} onClick={onNext} block>{card.type === 'hold' ? 'Got it' : 'Next'}</Button>
+        </div>
+        <div className="learn-links">
+          <Button variant="ghost" onClick={onAgain} disabled={card.type !== 'move'}>Show me again</Button>
+          <Button variant="ghost" onClick={onPrev} disabled={cardIndex === 0}>Undo turn</Button>
+        </div>
+        <p className="learn-foot">
           {FACE_COLOUR[orientation.front]} in front · yellow on top
-          {smartCubeAvailable() && !smart && <> · <button className="startover" style={{ padding: 0, color: 'inherit', textDecoration: 'underline' }} onClick={async () => { try { setSmart(await connectGan()); } catch { /* cancelled */ } }}>Connect smart cube</button></>}
+          {smartCubeAvailable() && !smart && <> · <button onClick={async () => { try { setSmart(await connectGan()); } catch { /* cancelled */ } }}>Connect smart cube</button></>}
           {smart && <> · {smart.name} connected</>}
         </p>
       </div>
     </main>
   );
+}
+
+/** Learn before there is a cube to learn on: one sentence, one pill (Opal's onboarding screen). */
+function LearnGate({ kind, message, onPaint, onScan }: { kind: 'incomplete' | 'invalid'; message?: string; onPaint: () => void; onScan: () => void }) {
+  return (
+    <main className="screen gate has-tabs" aria-label="Learn">
+      <div className="stage"><div className="gate-mark" aria-hidden><Icon name="learn" /></div></div>
+      <div className="dock">
+        <div className="hero-copy">
+          <p className="caps">Learn</p>
+          <h1>{kind === 'incomplete' ? 'First, your cube.' : 'One thing to fix first.'}</h1>
+          <p className="body">{kind === 'incomplete' ? 'Colour in all 54 stickers so the app can read it, or scan it with the camera.' : message}</p>
+        </div>
+        <Button onClick={onPaint} block>{kind === 'incomplete' ? 'Colour it in' : 'Fix it'}</Button>
+        {kind === 'incomplete' && <div className="learn-links"><Button variant="ghost" onClick={onScan}>Scan it instead</Button></div>}
+      </div>
+    </main>
+  );
+}
+
+/** Opal's gem-unlocked screen: the stage's stone on black, one title, one line, one pill. */
+function Milestone({ stage, reduce, onContinue }: { stage: StageId; reduce: boolean; onContinue: () => void }) {
+  const n = STAGES.indexOf(stage) + 1;
+  const [noGem, setNoGem] = useState(false);
+  const today = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+  const ease = [0.23, 1, 0.32, 1] as const;
+  return (
+    <motion.div className="milestone" role="dialog" aria-modal="true" aria-label={`Stage ${n} complete`} style={{ '--glow': GEM_HEX[stage], '--tint': GEM_HEX[stage] } as CSSProperties}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.18 } }} transition={{ duration: 0.3, ease }}>
+      <div className="milestone-copy">
+        <p className="caps" data-tint>Stage {n} of 7</p>
+        <h1>{STAGE_NAME[stage]}</h1>
+        <p className="body">{STAGE_DONE_LINE[stage]}</p>
+      </div>
+      <motion.div className="milestone-gem" initial={reduce ? { opacity: 0 } : { opacity: 0, transform: 'scale(0.88) translateY(12px)' }} animate={{ opacity: 1, transform: 'scale(1) translateY(0px)' }} transition={{ duration: 0.6, ease, delay: 0.1 }}>
+        {noGem ? <i className="milestone-orb" aria-hidden /> : <img src={`/gems/stage-${n}.webp`} alt="" decoding="async" onError={() => setNoGem(true)} />}
+      </motion.div>
+      <motion.div className="milestone-foot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.45 }}>
+        <p className="caption"><Icon name="check" /> Unlocked {today}</p>
+        <Button block onClick={onContinue}>Continue</Button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/** Every move of the step laid out as a scrubber; the current one sits at the centre mark, large. */
+function Ruler({ moves, index }: { moves: string[]; index: number }) {
+  return (
+    <div className="ruler" aria-hidden>
+      <div className="ruler-ticks" />
+      <div className="ruler-row" style={{ transform: `translateX(${-index * 64}px)` }}>
+        {moves.map((m, i) => <span key={i} className={i === index ? 'glyph now' : i < index ? 'done' : ''}>{m}</span>)}
+      </div>
+      <i className="ruler-mark" />
+    </div>
+  );
+}
+
+/** Wraps the layer name in <em> so it takes the stage colour. */
+function colourLayer(sentence: string) {
+  for (const w of LAYER_WORDS) {
+    const i = sentence.indexOf(w);
+    if (i >= 0) return <>{sentence.slice(0, i)}<em>{w}</em>{sentence.slice(i + w.length)}</>;
+  }
+  return sentence;
 }

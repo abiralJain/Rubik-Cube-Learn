@@ -1,18 +1,24 @@
-.cube3d { position: absolute; inset: 0; touch-action: none; outline: none; }
+.cube3d { position: absolute; inset: 0; touch-action: none; outline: none; isolation: isolate; }
+/* the floor: a soft coloured reflection under the object, as in the gem renders */
+.cube3d::after {
+  content: ''; position: absolute; left: 50%; bottom: 4%; width: 62%; height: 12%; transform: translateX(-50%); z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tint) 60%, transparent), transparent 72%);
+  filter: blur(8px); opacity: 0; transition: opacity 600ms var(--ease-out);
+}
+.cube3d[data-ready]::after { opacity: 0.5; }
 .cube3d canvas { display: block; cursor: grab; opacity: 0; transition: opacity 420ms var(--ease-out); }
 .cube3d[data-ready] canvas { opacity: 1; }
 .cube3d[data-dragging] canvas { cursor: grabbing; }
 .cube3d:focus-visible { outline: none; }
 .cube3d:focus-visible::after {
   content: ''; position: absolute; inset: 12px; border-radius: var(--r-lg); pointer-events: none;
-  box-shadow: 0 0 0 3px var(--ink);
+  box-shadow: 0 0 0 2px var(--ink-3);
 }
+/* before the shaders compile: the room's light without its object */
 .cube-poster { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
 .cube-poster::before {
-  content: ''; width: 34%; aspect-ratio: 1; border-radius: 22%;
-  background: conic-gradient(from 210deg, var(--c-red), var(--c-orange), var(--c-yellow), var(--c-green), var(--c-blue), var(--c-red));
-  filter: blur(28px); opacity: .35;
+  content: ''; width: 40%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255,255,255,.10), transparent 70%);
   animation: poster-breathe 2.4s ease-in-out infinite;
 }
-@keyframes poster-breathe { 0%,100% { transform: scale(.94); } 50% { transform: scale(1.04); } }
-
+@keyframes poster-breathe { 0%,100% { transform: scale(.94); opacity: .7; } 50% { transform: scale(1.04); opacity: 1; } }

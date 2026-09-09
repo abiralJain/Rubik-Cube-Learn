@@ -31,8 +31,8 @@ test('cube becomes ready without blocking and renders 81 draw calls', async ({ p
 test('orbit drag on the ground rotates the whole cube and coasts to a stop', async ({ page }) => {
   await waitReady(page);
   const before = await orientation(page);
-  const vp = page.viewportSize()!;
-  const x0 = Math.round(vp.width * 0.08), y0 = Math.round(vp.height * 0.5);
+  const r = (await page.locator('.cube3d').boundingBox())!; // drag inside the stage, off the cube's silhouette
+  const x0 = Math.round(r.x + r.width * 0.08), y0 = Math.round(r.y + r.height * 0.5);
   await page.mouse.move(x0, y0); await page.mouse.down();
   for (let i = 1; i <= 10; i++) { await page.mouse.move(x0 + i * 14, y0 - i * 3); await page.waitForTimeout(16); }
   await page.mouse.up();

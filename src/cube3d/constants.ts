@@ -1,20 +1,25 @@
 export const CUBELET = 1.0;
 export const PITCH = 1.03;
-export const BODY_RADIUS = 0.2;
-export const BODY_SEGMENTS = 4;
+export const BODY_RADIUS = 0.07;
+export const BODY_SEGMENTS = 5;
 
-export const STICKER_SIZE = 0.74;
-export const STICKER_DEPTH = 0.1;
-export const STICKER_RADIUS = 0.05;
-export const STICKER_SEGMENTS = 3;
-export const STICKER_SINK = 0.04;
-export const STICKER_OFFSET = CUBELET / 2 + STICKER_DEPTH / 2 - STICKER_SINK; // 0.51
+/* Gemstone tiles: a step-cut crown of glass over a faceted, self-lit core. Octagonal outline, five rings up to a small table. */
+export const TILE_SIZE = 0.94;       // outer footprint
+export const TILE_CHAMFER = 0.18;    // corner cut, as a fraction of the half size
+export const TILE_DEPTH = 0.05;      // straight wall below the first ring
+export const TILE_RINGS: [number, number][] = [[1, 0], [0.9, 0.06], [0.79, 0.11], [0.67, 0.15], [0.54, 0.18], [0.4, 0.2]]; // [scale, height]
+export const TILE_TOP = TILE_RINGS[TILE_RINGS.length - 1][1]; // 0.2
+export const CORE_SCALE = 0.86;      // the lit core sits just inside the crown
+export const CORE_BRIGHT = 1.5;      // core colour = tile colour × this (HDR, the glass tones it down)
+export const STICKER_OFFSET = CUBELET / 2 + TILE_DEPTH - 0.004; // 0.546: the wall bottom sits on the body face
+export const TILE_PROUD = STICKER_OFFSET + TILE_TOP - CUBELET / 2; // 0.246
 
 export const CUBE_HALF = 1.5 * PITCH;
 export const APPARENT_RADIUS = 2.3;
 export const FILL = 0.68;
+export const MAX_RADIUS_PX = 250; // cube radius on screen never exceeds this
 export const CAMERA_FOV = 32;
-export const CAMERA_ELEVATION = 18; // degrees
+export const CAMERA_ELEVATION = 22; // degrees
 
 export const LAYER_LIFT = 0.08;
 export const TAP_MAX_PX = 8;
@@ -25,11 +30,35 @@ export const MOMENTUM_MAX = 12;
 export const MOMENTUM_STOP = 0.02;
 export const LAYER_PX_PER_QUARTER = 140;
 
+/* gemstone colours: the core carries them saturated; the glass above is tinted lighter so yellow stays yellow */
 export const COLORS: Record<string, string> = {
-  U: '#FFFDF8', D: '#FFD54A', R: '#F0574A', L: '#FF9440', F: '#3DBE72', B: '#3E7BE0',
-  '.': '#7C7689',
+  U: '#F6F4EC', D: '#F4BE14', R: '#B8121C', L: '#EA600C', F: '#12A050', B: '#2447D8',
+  '.': '#2A2A30',
 };
-export const BODY_COLOR = '#35304A';
+export const GLASS_TINT: Record<string, string> = {
+  U: '#FFFFFF', D: '#FFE9A0', R: '#E8636A', L: '#FFA870', F: '#7BE0A6', B: '#8DA8FF',
+  '.': '#55555C',
+};
+export const BODY_COLOR = '#08080A';
+
+/** Software or otherwise weak GPUs skip the refraction pass: the crown becomes plain translucent glass. Override with localStorage 'cube.gpu' = 'low' | 'high'. */
+export const LOW_GPU: boolean = (() => {
+  try {
+    const pref = localStorage.getItem('cube.gpu');
+    if (pref === 'low') return true; if (pref === 'high') return false;
+    const c = document.createElement('canvas');
+    const gl = (c.getContext('webgl2') ?? c.getContext('webgl')) as WebGLRenderingContext | null;
+    const ext = gl?.getExtension('WEBGL_debug_renderer_info');
+    const r = ext && gl ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+    return /swiftshader|llvmpipe|software|mesa offscreen/i.test(r);
+  } catch { return false; }
+})();
+
+/* material values per sticker state; shared by geometry.ts and the controller */
+export const STICKER_MAT = {
+  full: { roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1.2, iridescence: 0.25, transmission: 1, thickness: 0.25, attenuationDistance: 2.0, coreBright: CORE_BRIGHT },
+  empty: { roughness: 0.1, clearcoat: 0.8, clearcoatRoughness: 0.1, envMapIntensity: 0.6, iridescence: 0, transmission: 0.7, thickness: 0.25, attenuationDistance: 1.0, coreBright: 0.5 },
+} as const;
 
 export const SPRING = {
   press: { k: 800, c: 18 },

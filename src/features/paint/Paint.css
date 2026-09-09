@@ -1,54 +1,43 @@
-.paint-hint {
-  position: absolute; left: 0; right: 0; top: 8px; text-align: center; pointer-events: none;
-  padding: 0 var(--pad);
-  font-family: var(--font-text); font-weight: 600; font-size: 17px; color: var(--ink-2);
-}
-.paint-hint b { color: var(--ink); font-weight: 700; }
-.paint-count {
-  position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; pointer-events: none;
-  font-size: 14px; color: var(--ink-2); font-weight: 600;
-}
-.swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+/* Paint: the object, a count, one sentence, six colour swatches (Opal's day circles), one pill */
+.paint-hint { text-align: center; font-size: 20px; line-height: 25px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); padding: 0 8px; }
+.paint-hint b { font-weight: 600; color: var(--tint); }
+.paint-count { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; pointer-events: none; }
+.swatches { display: flex; gap: 12px; justify-content: center; padding: 4px 0; }
 .sw {
   position: relative; appearance: none; border: 0; padding: 0; background: none; cursor: pointer;
-  aspect-ratio: 1; display: grid; place-items: center;
-  transition: transform 320ms var(--spring), opacity 250ms var(--ease-out);
+  width: 44px; height: 44px; display: grid; place-items: center;
+  transition: transform 200ms var(--ease-out), opacity 250ms var(--ease-out);
   touch-action: manipulation;
 }
-.sw::after { content: ''; position: absolute; inset: -6px; } /* 44px+ hit area */
+.sw::after { content: ''; position: absolute; inset: -4px; } /* 52px hit area */
 .sw i {
-  display: block; width: 100%; height: 100%; border-radius: 24%;
+  display: block; width: 40px; height: 40px; border-radius: 50%;
   background: var(--fill);
-  box-shadow: var(--gloss), 0 6px 14px -6px color-mix(in srgb, var(--fill) 60%, transparent);
-  transition: box-shadow 200ms var(--ease-out), transform 100ms var(--ease-out);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 .sw b {
-  position: absolute; font-family: var(--font-display); font-weight: 700; font-size: 17px;
-  color: rgba(255,255,255,.96); text-shadow: 0 1px 2px rgba(0,0,0,.25); pointer-events: none;
+  position: absolute; right: -2px; top: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--solid-2); color: var(--ink-2); font-size: 11px; font-weight: 600; display: grid; place-items: center;
+  font-variant-numeric: tabular-nums; pointer-events: none; transition: opacity 160ms var(--ease-out);
 }
-.sw[data-light] b { color: rgba(27,24,48,.62); text-shadow: none; }
-.sw:active i { transform: scale(.94); box-shadow: var(--gloss-pressed); }
-.sw[aria-checked="true"] { transform: translateY(-8px) scale(1.06); }
-.sw[aria-checked="true"] i { box-shadow: var(--gloss), 0 0 0 3px var(--ground), 0 0 0 6px var(--ink), 0 10px 22px -8px color-mix(in srgb, var(--fill) 70%, transparent); }
-.sw[data-empty] { opacity: .28; pointer-events: none; transform: none; }
-.sw:focus-visible { outline: 3px solid var(--ink); outline-offset: 5px; border-radius: 24%; }
+.sw:active i { transform: scale(.94); }
+.sw[aria-checked="true"] i { box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 0 3px var(--ground), 0 0 0 5px var(--ink); }
+.sw[aria-checked="true"] b { color: var(--ink); }
+.sw[data-empty] { opacity: .28; pointer-events: none; }
+.sw[data-empty] b { opacity: 0; }
+.sw:focus-visible { outline: 2px solid var(--ink); outline-offset: 6px; border-radius: 50%; }
 .paint-row { display: flex; gap: 10px; align-items: stretch; }
-.paint-row .btn { flex: 0 0 auto; }
+.paint-row .btn-secondary { flex: 0 0 auto; padding: 0 18px; }
 .paint-row .btn-primary { flex: 1; }
-.paint-issue {
-  display: flex; align-items: center; gap: 12px; padding: 12px 14px 12px 16px;
-  font-size: 15px; color: var(--ink); font-weight: 600; line-height: 1.35;
-}
-.paint-issue .btn { flex: 0 0 auto; min-height: 40px; padding: 0 16px; font-size: 15px; }
-@media (prefers-reduced-motion: reduce) {
-  .sw { transition: opacity 250ms var(--ease-out); }
-  .sw[aria-checked="true"] { transform: none; }
-}
-@media (min-width: 900px) { .swatches { gap: 14px; } }
+.paint-issue { display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 18px; }
+.paint-issue span { flex: 1; font-size: 15px; line-height: 20px; }
+.paint-issue .btn { flex: 0 0 auto; min-height: 36px; padding: 0 14px; font-size: 14px; }
+@media (min-width: 900px) { .swatches { gap: 16px; } }
 
 /* first-run: a soft ring breathing on a front sticker until the first tap */
 .tap-hint { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; pointer-events: none;
-  box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 0 0 6px rgba(27,24,48,.35), 0 8px 24px rgba(27,24,48,.18);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.9), 0 0 0 5px rgba(255,255,255,.18);
   animation: tap-breathe 1.4s var(--ease-in-out) infinite; }
 @keyframes tap-breathe { 0%,100% { transform: scale(.9); opacity: .9; } 50% { transform: scale(1.1); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .tap-hint { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .tap-hint { animation: none; } .sw { transition: opacity 250ms var(--ease-out); } }

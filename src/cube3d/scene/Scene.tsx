@@ -1,18 +1,19 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { MathUtils, NeutralToneMapping, type Mesh, type PerspectiveCamera } from 'three';
-import { APPARENT_RADIUS, CAMERA_ELEVATION, CAMERA_FOV, CUBE_HALF, FILL } from '../constants';
-import { bodyGeometry, bodyMaterial, environmentFor, makeStickerMaterial, shadowMaterial, stickerGeometry, COLORS_FROM } from '../geometry';
+import { APPARENT_RADIUS, CAMERA_ELEVATION, CAMERA_FOV, CUBE_HALF, FILL, MAX_RADIUS_PX } from '../constants';
+import { bodyGeometry, bodyMaterial, coreGeometry, environmentFor, makeCoreMaterial, makeStickerMaterial, shadowMaterial, stickerGeometry, COLORS_FROM } from '../geometry';
 import { SLOTS, STICKERS } from '../placements';
 import type { CubeController } from '../controller';
 
 export function Lights() {
   return (
     <>
-      <hemisphereLight args={['#FFF4E6', '#6A5A7A', 0.7]} />
-      <directionalLight position={[4, 6, 5]} color="#FFF3E4" intensity={2.2} />
-      <directionalLight position={[-5, 2, 3]} color="#FFE3C8" intensity={0.8} />
-      <directionalLight position={[-3, 5, -6]} color="#DCE6FF" intensity={1.2} />
+      {/* the environment map does most of the lighting; these only shape the diffuse falloff */}
+      <hemisphereLight args={['#FFFFFF', '#1A1620', 0.08]} />
+      <directionalLight position={[4, 7, 5]} color="#FFFFFF" intensity={0.6} />
+      <directionalLight position={[-5, 2, 3]} color="#F2F4F8" intensity={0.18} />
+      <directionalLight position={[-2, 4, -7]} color="#FFFFFF" intensity={0.4} />
     </>
   );
 }
@@ -21,11 +22,14 @@ export function SceneEnvironment() {
   const { gl, scene } = useThree();
   useEffect(() => {
     gl.toneMapping = NeutralToneMapping;
-    gl.toneMappingExposure = 1.18;
+    gl.toneMappingExposure = 1.1;
+    // the glass crowns refract the scene; render that pass at half resolution
+    (gl as unknown as { transmissionResolutionScale?: number }).transmissionResolutionScale = 0.5;
     const t0 = performance.now();
     scene.environment = environmentFor(gl);
     if (import.meta.env.DEV) console.info(`[cube] environment ${(performance.now() - t0).toFixed(0)}ms`);
-    scene.environmentIntensity = 0.9;
+    scene.environmentIntensity = 1.0;
+    if (import.meta.env.DEV) (window as unknown as { __gl?: unknown }).__gl = gl;
   }, [gl, scene]);
   return null;
 }
@@ -38,7 +42,10 @@ export function CameraFit({ fill = FILL, targetY = -0.3 }: { fill?: number; targ
     const vHalf = Math.tan(MathUtils.degToRad(cam.fov) / 2);
     const aspect = size.width / size.height;
     const halfShort = aspect >= 1 ? vHalf : vHalf * aspect;
-    const d = APPARENT_RADIUS / (fill * halfShort);
+    // the object should feel held, not loom: cap its on-screen radius on large canvases
+    const shortPx = Math.min(size.width, size.height);
+    const f = Math.min(fill, (2 * MAX_RADIUS_PX) / shortPx);
+    const d = APPARENT_RADIUS / (f * halfShort);
     const phi = MathUtils.degToRad(CAMERA_ELEVATION);
     cam.position.set(0, d * Math.sin(phi) + targetY, d * Math.cos(phi));
     cam.lookAt(0, targetY, 0);
@@ -70,6 +77,7 @@ export function CubeRig({ ctrl, children }: { ctrl: CubeController; children?: R
   const group = useRef<import('three').Group>(null);
   const { camera, invalidate, gl } = useThree();
   const materials = useMemo(() => STICKERS.map((p) => makeStickerMaterial(COLORS_FROM(ctrl.displayFacelets[p.index]))), [ctrl]);
+  const cores = useMemo(() => STICKERS.map((p) => makeCoreMaterial(COLORS_FROM(ctrl.displayFacelets[p.index]))), [ctrl]);
 
   const { scene } = useThree();
   useEffect(() => {
@@ -119,8 +127,11 @@ export function CubeRig({ ctrl, children }: { ctrl: CubeController; children?: R
           material={materials[p.index]}
           position={p.position}
           quaternion={p.quaternion}
+          renderOrder={2}
           ref={(m) => { if (m) { m.userData.index = p.index; ctrl.stickers[p.index] = m; } }}
-        />
+        >
+          <mesh geometry={coreGeometry} material={cores[p.index]} renderOrder={1} raycast={() => null} />
+        </mesh>
       ))}
       {children}
     </group>

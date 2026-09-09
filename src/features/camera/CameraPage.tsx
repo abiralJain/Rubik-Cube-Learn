@@ -132,7 +132,7 @@ export default function CameraPage() {
         <Icon name="camera" style={{ width: 40, height: 40, color: 'var(--ink-3)' }} />
         <h1 style={{ fontSize: 30 }}>{status === 'none' ? 'No camera here.' : 'The camera is off.'}</h1>
         <p style={{ color: 'var(--ink-2)' }}>{status === 'none' ? 'That is fine. Colouring the stickers in takes about a minute.' : 'Allow the camera in your browser settings, or colour the stickers in instead.'}</p>
-        <Button tone="blue" onClick={() => nav('/paint')} block><Icon name="paint" /> Colour it in</Button>
+        <Button onClick={() => nav('/paint')} block><Icon name="paint" /> Colour it in</Button>
       </div></main>
     );
   }
@@ -158,9 +158,9 @@ export default function CameraPage() {
           {ORDER.map((o, i) => <i key={o.face} style={{ '--dot': COLOUR_CSS[o.face] } as CSSProperties} data-done={i < stepIdx ? '' : undefined} data-active={i === stepIdx ? '' : undefined} />)}
         </div>
         <div className="cam-row">
-          <Button variant="ghost" onClick={retake} disabled={stepIdx === 0}><Icon name="undo" /> Retake</Button>
+          <Button variant="secondary" onClick={retake} disabled={stepIdx === 0}><Icon name="undo" /> Retake</Button>
           {done && !validation?.ok
-            ? <Button tone="blue" onClick={() => nav('/paint')}><Icon name="paint" /> Fix by hand</Button>
+            ? <Button onClick={() => nav('/paint')}><Icon name="paint" /> Fix by hand</Button>
             : <Button tone={FACE_COLOUR[step.face] as 'green'} onClick={manual} disabled={done}><Icon name="camera" /> Capture</Button>}
         </div>
       </div>

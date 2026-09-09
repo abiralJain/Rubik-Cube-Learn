@@ -42,7 +42,7 @@ test('resume: reloading mid-solve comes back to the same move', async ({ page })
   const primary = page.locator('.learn-actions .btn-primary');
   for (let i = 0; i < 6; i++) { await primary.click(); await idle(page); await page.waitForTimeout(150); }
   await page.waitForTimeout(400);
-  const meta = await page.locator('.learn-head .meta').innerText();
+  const meta = (await page.locator('.learn-head .meta').textContent()) ?? ''; // textContent: the label is uppercased by CSS
   const before = await display(page);
   await page.reload();
   await page.waitForFunction(() => (window as unknown as { __cube?: { ready: boolean } }).__cube?.ready === true, null, { timeout: 30_000 });
@@ -73,7 +73,7 @@ test('only the expected turn commits from a swipe; a wrong swipe slides back', a
   await page.waitForTimeout(1200);
   // the drag either rubber-banded (state unchanged) or happened to be the expected move (state advanced by exactly that move)
   const after = await display(page);
-  const meta = await page.locator('.learn-head .meta').innerText();
+  const meta = (await page.locator('.learn-head .meta').textContent()) ?? '';
   if (after === before) expect(meta).toContain('Move 1 of');
   else expect(meta).toContain('Move 2 of');
 });

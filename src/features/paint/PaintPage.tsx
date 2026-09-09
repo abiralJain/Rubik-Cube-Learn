@@ -107,10 +107,10 @@ export default function PaintPage() {
       <div className="stage">
         <CubeStage facelets={facelets} onStickerTap={onStickerTap} highlight={highlight} interactive cubeRef={cubeRef} />
         {hintXY && <span className="tap-hint" style={{ left: hintXY.x, top: hintXY.y }} aria-hidden />}
-        <p className="paint-hint" aria-live="polite">{hint}</p>
-        <p className="paint-count num"><RollingNumber value={filled} /> of 54 stickers</p>
+        <p className="caps paint-count num"><RollingNumber value={filled} /> of 54 stickers</p>
       </div>
-      <div className="dock">
+      <div className="dock has-tabs">
+        <p className="paint-hint" aria-live="polite">{hint}</p>
         <div className="swatches" role="radiogroup" aria-label="Sticker colours">
           {FACES.map((f, i) => (
             <button
@@ -132,27 +132,27 @@ export default function PaintPage() {
           {validation && !validation.ok && validation.reason !== 'incomplete' && (
             <motion.div
               key="issue"
-              className="glass paint-issue"
+              className="card paint-issue"
               initial={reduce ? { opacity: 0 } : { opacity: 0, transform: 'translateY(8px)' }}
               animate={{ opacity: 1, transform: 'translateY(0px)' }}
               exit={reduce ? { opacity: 0 } : { opacity: 0, transform: 'translateY(6px)' }}
               transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
               role="status"
             >
-              <Icon name="bulb" style={{ width: 22, height: 22, flex: '0 0 auto', color: 'var(--c-orange-deep)' }} />
-              <span style={{ flex: 1 }}>{validation.suspects.length ? 'Let’s find them.' : validation.message}</span>
+              <Icon name="bulb" style={{ width: 20, height: 20, flex: '0 0 auto', color: 'var(--tint)' }} />
+              <span>{validation.suspects.length ? (showSuspects ? 'The lit stickers are the likely ones. Tap one and pick its real colour.' : `${validation.suspects.length} sticker${validation.suspects.length > 1 ? 's' : ''} look${validation.suspects.length > 1 ? '' : 's'} wrong.`) : 'Compare each side with the cube in your hand.'}</span>
               {validation.suspects.length > 0 && (
-                <Button variant="ghost" aria-pressed={showSuspects} onClick={() => setShowSuspects((v) => !v)}>{showSuspects ? 'Show all' : 'Show me'}</Button>
+                <Button variant="secondary" aria-pressed={showSuspects} onClick={() => setShowSuspects((v) => !v)}>{showSuspects ? 'Show all' : 'Show me'}</Button>
               )}
             </motion.div>
           )}
         </AnimatePresence>
         <div className="paint-row">
-          <Button variant="ghost" onClick={() => { undoPaint(); sfx.plink(0, 0.08); }} disabled={!paintHistory.length} aria-label="Undo">
+          <Button variant="secondary" onClick={() => { undoPaint(); sfx.plink(0, 0.08); }} disabled={!paintHistory.length} aria-label="Undo">
             <Icon name="undo" /> Undo
           </Button>
           <Button className="btn-primary" tone={TINT[active]} disabled={!ready} ready={ready} onClick={go} block>
-            <Icon name="check" /> Solve this cube
+            Solve this cube
           </Button>
         </div>
       </div>

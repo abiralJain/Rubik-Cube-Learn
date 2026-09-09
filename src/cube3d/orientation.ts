@@ -14,7 +14,7 @@ export function quaternionForFaces(top: Face, front: Face, yaw = -0.5, pitch = 0
 }
 
 export type Orientation = { top: Face; front: Face; yaw?: number; pitch?: number } | Quaternion;
-export const HERO: Orientation = { top: 'U', front: 'F', yaw: -0.55, pitch: 0.12 };
+export const HERO: Orientation = { top: 'U', front: 'F', yaw: -0.7, pitch: 0.3 };
 
 export function resolveOrientation(o: Orientation): Quaternion {
   if (o instanceof Quaternion) return o.clone();

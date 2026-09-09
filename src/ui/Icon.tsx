@@ -2,7 +2,7 @@ import type { SVGProps } from 'react';
 
 export type IconName =
   | 'camera' | 'paint' | 'learn' | 'undo' | 'replay' | 'share' | 'sound' | 'sound-off'
-  | 'voice' | 'voice-off' | 'close' | 'help' | 'arrow-right' | 'arrow-left' | 'check' | 'link' | 'rotate' | 'bulb';
+  | 'voice' | 'voice-off' | 'close' | 'help' | 'arrow-right' | 'arrow-left' | 'check' | 'link' | 'rotate' | 'bulb' | 'home' | 'cube';
 
 const PATHS: Record<IconName, string> = {
   camera: 'M4 8.5A2.5 2.5 0 0 1 6.5 6h1.2l1.1-1.6c.3-.4.7-.6 1.2-.6h4c.5 0 .9.2 1.2.6L16.3 6h1.2A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z M12 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
@@ -23,6 +23,8 @@ const PATHS: Record<IconName, string> = {
   link: 'M10 14a4 4 0 0 0 5.7 0l2.8-2.8a4 4 0 0 0-5.7-5.7l-1.4 1.4 M14 10a4 4 0 0 0-5.7 0l-2.8 2.8a4 4 0 0 0 5.7 5.7l1.4-1.4',
   rotate: 'M19.5 12a7.5 7.5 0 1 1-2.2-5.3 M19.5 4.5v4h-4',
   bulb: 'M9 18h6 M10 21h4 M12 3a6 6 0 0 1 3.5 10.9c-.6.5-1 1.2-1 2.1H9.5c0-.9-.4-1.6-1-2.1A6 6 0 0 1 12 3Z',
+  home: 'M4.5 11 12 4.5l7.5 6.5 M6.5 9.8V19h11V9.8',
+  cube: 'M12 3.5l7.5 4.2v8.6L12 20.5l-7.5-4.2V7.7L12 3.5Z M12 12l7.5-4.3 M12 12v8.5 M12 12 4.5 7.7',
 };
 
 export function Icon({ name, weight = 1.75, ...rest }: { name: IconName; weight?: number } & SVGProps<SVGSVGElement>) {

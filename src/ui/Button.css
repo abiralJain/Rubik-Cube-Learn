@@ -1,46 +1,59 @@
 .btn {
   appearance: none; border: 0; cursor: pointer; user-select: none; -webkit-user-select: none;
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  min-height: var(--control-h); padding: 0 24px;
+  position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: var(--control-h); padding: 0 22px;
   border-radius: var(--r-pill);
-  font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: 0;
-  transition: transform 100ms var(--ease-out), box-shadow 100ms var(--ease-out), background-color 220ms var(--ease-out), color 220ms var(--ease-out), opacity 200ms var(--ease-out);
-  will-change: transform;
+  font-family: var(--font); font-weight: 600; font-size: 16px; letter-spacing: -0.005em; line-height: 1;
+  color: var(--ink);
+  transition: transform 120ms var(--ease-out), background-color 200ms var(--ease-out), color 200ms var(--ease-out), opacity 200ms var(--ease-out);
   touch-action: manipulation;
 }
-.btn:active { transform: scale(0.96); }
+.btn:active { transform: scale(0.97); }
 .btn:disabled { cursor: default; pointer-events: none; }
-.btn svg { width: 22px; height: 22px; flex: 0 0 auto; }
+.btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
 
-.btn-candy {
-  color: #fff;
-  background: var(--tone, var(--c-green));
-  box-shadow: var(--gloss), 0 8px 20px -6px color-mix(in srgb, var(--tone, var(--c-green)) 55%, transparent);
+/* Primary: Opal's dark pill with a soft light along the bottom edge */
+.btn-primary { background: var(--solid-2); }
+.btn-primary::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background:
+    radial-gradient(60% 120% at 8% 130%, var(--sheen-l, var(--tint)) 0%, transparent 70%),
+    radial-gradient(60% 120% at 92% 130%, var(--sheen-r, var(--tint)) 0%, transparent 70%);
+  opacity: 0.42;
+  transition: opacity 200ms var(--ease-out);
 }
-.btn-candy:active { box-shadow: var(--gloss-pressed), 0 2px 6px -2px color-mix(in srgb, var(--tone, var(--c-green)) 55%, transparent); }
-.btn-candy[data-light] { color: var(--ink); }
-.btn-candy:disabled { background: var(--ink-4); color: var(--ink-3); box-shadow: none; }
-.btn-candy[data-ready] { animation: pop 600ms var(--spring); }
-@keyframes pop { 0% { transform: scale(0.96); } 60% { transform: scale(1.03); } 100% { transform: scale(1); } }
-
-.btn-ghost {
-  color: var(--ink);
-  background: var(--glass-strong);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  backdrop-filter: blur(16px) saturate(160%);
-  box-shadow: var(--shadow-1), inset 0 1px 0 var(--glass-edge);
+.btn-primary[data-toned]::before {
+  background: radial-gradient(70% 130% at 50% 140%, var(--tone) 0%, transparent 72%);
+  opacity: 0.55;
 }
-.btn-ghost:disabled { opacity: 0.35; }
+.btn-primary:active::before { opacity: 0.7; }
+.btn-primary:disabled { background: var(--solid-1); color: var(--ink-3); }
+.btn-primary:disabled::before { opacity: 0; }
+.btn-primary[data-ready] { animation: pop 500ms var(--spring); }
+@keyframes pop { 0% { transform: scale(0.97); } 60% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
-.btn-icon { width: var(--tap); min-height: var(--tap); padding: 0; border-radius: 50%; }
-.btn-icon svg { width: 20px; height: 20px; }
+/* Secondary: flat dark pill */
+.btn-secondary { background: var(--solid-1); font-weight: 500; }
+.btn-secondary:disabled { color: var(--ink-3); }
+
+/* Ghost: a text link with a generous hit area */
+.btn-ghost { background: transparent; color: var(--ink-2); font-weight: 500; font-size: 15px; min-height: var(--tap); padding: 0 12px; }
+.btn-ghost:disabled { color: var(--ink-3); }
+
+/* Icon: 36 circle */
+.btn-icon { width: var(--icon-btn); min-height: var(--icon-btn); padding: 0; border-radius: 50%; background: var(--surface-2); color: var(--ink); }
+.btn-icon svg { width: 16px; height: 16px; }
+.btn-icon[aria-pressed="false"] { color: var(--ink-2); }
 
 .btn-block { width: 100%; }
 
 @media (hover: hover) and (pointer: fine) {
-  .btn-candy:hover:not(:disabled) { filter: brightness(1.04); }
-  .btn-ghost:hover:not(:disabled) { background: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #313134; }
+  .btn-secondary:hover:not(:disabled) { background: #232325; }
+  .btn-ghost:hover:not(:disabled) { color: var(--ink); }
+  .btn-icon:hover:not(:disabled) { background: var(--surface-3); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .btn-candy[data-ready] { animation: none; }
+  .btn-primary[data-ready] { animation: none; }
 }

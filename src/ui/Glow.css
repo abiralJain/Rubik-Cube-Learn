@@ -1,33 +1,31 @@
-.glow {
-  position: fixed; inset: -20vmin; z-index: -1; pointer-events: none;
-  opacity: 1;
-  transition: opacity 600ms var(--ease-out);
+.room {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(70% 55% at 50% 100%, rgba(255,255,255,0.035), transparent 70%),
+    var(--ground);
 }
-.glow i {
-  position: absolute; display: block;
-  width: 110vmin; height: 110vmin; border-radius: 50%;
-  /* soft-edged gradient instead of a blur filter: the browser only composites a transform per frame */
-  background: radial-gradient(circle, var(--blob) 0%, color-mix(in srgb, var(--blob) 55%, transparent) 22%, transparent 62%);
-  opacity: 0.2;
-  transition: opacity 600ms var(--ease-out), transform 900ms var(--ease-in-out);
-  will-change: transform;
-  animation: drift var(--dur) ease-in-out infinite alternate;
-  animation-delay: var(--delay);
+/* the light: a soft ellipse behind the hero, pushed up into the stage */
+.room::before {
+  content: ''; position: absolute; left: 50%; top: 30%; width: 120vmin; height: 90vmin;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, var(--glow) 0%, color-mix(in srgb, var(--glow) 45%, transparent) 30%, transparent 72%);
+  opacity: 0.14;
+  transition: opacity 700ms var(--ease-out), background 700ms var(--ease-out);
+  will-change: opacity;
 }
-.glow[data-tint] i { opacity: 0.16; }
-.glow[data-tint="white"]  i[data-c="white"],
-.glow[data-tint="yellow"] i[data-c="yellow"],
-.glow[data-tint="red"]    i[data-c="red"],
-.glow[data-tint="orange"] i[data-c="orange"],
-.glow[data-tint="green"]  i[data-c="green"],
-.glow[data-tint="blue"]   i[data-c="blue"] { opacity: 0.38; }
-.glow[data-mode="holo"] i { opacity: 0.34; }
-.glow[data-mode="off"] { opacity: 0; }
-
-@keyframes drift {
-  from { transform: translate(var(--x0), var(--y0)) scale(1); }
-  to   { transform: translate(var(--x1), var(--y1)) scale(1.12); }
+.room[data-tint]::before { opacity: 0.28; }
+.room[data-mode="holo"]::before { opacity: 0.32; background: radial-gradient(closest-side, #F3EDB0 0%, #9AE8DD 34%, transparent 72%); }
+.room[data-mode="off"]::before { opacity: 0; }
+/* a slow breath; opacity only, so it is a compositor job */
+.room::after {
+  content: ''; position: absolute; left: 50%; top: 30%; width: 60vmin; height: 44vmin;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, var(--glow), transparent 70%);
+  opacity: 0.08; mix-blend-mode: screen;
+  animation: room-breathe 6s var(--ease-in-out) infinite alternate;
 }
-@media (prefers-reduced-motion: reduce) {
-  .glow i { animation: none; transform: translate(var(--x0), var(--y0)); }
+@keyframes room-breathe { from { opacity: 0.05; } to { opacity: 0.12; } }
+@media (min-width: 600px) {
+  .room::before, .room::after { left: 30%; top: 50%; }
 }
+@media (prefers-reduced-motion: reduce) { .room::after { animation: none; } }
